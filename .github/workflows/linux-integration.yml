@@ -14,6 +14,11 @@ on:
 permissions:
   contents: read
 
+# The consumers are built the way a person builds them: the bindings, the
+# consumer repository and an upstream checkout as siblings, then upstream's
+# own make. MicroPython takes the consumer's manifest (its c_module() line
+# names the usermod); CircuitPython takes the consumer's apply script, which
+# copies its shared-bindings/shared-module into the tree. No aggregator.
 jobs:
   embedded-unix:
     name: ${{ matrix.runtime }} Unix build and smoke
@@ -27,31 +32,24 @@ jobs:
       - name: Check out bindings under test
         uses: actions/checkout@v7
         with:
-          path: lvgl-bindings
+          path: integration/lvgl-bindings
           ref: ${{ inputs['bindings-ref'] || github.sha }}
           submodules: recursive
-
-      - name: Check out the aggregator build orchestration
-        uses: actions/checkout@v7
-        with:
-          repository: PyDevices/cmods
-          ref: 2ba938208dc61ae0f519f6e993b418111e951fb9
-          path: integration
 
       - name: Check out MicroPython consumer
         if: matrix.runtime == 'micropython'
         uses: actions/checkout@v7
         with:
           repository: PyDevices/lvgl-micropython
-          ref: d7ea1938a6d53cd03a6559f9f46fc7f07f7c2300
+          ref: 5562012a160465770aa5f4389dd41d6bb25eb2ef
           path: integration/lvgl-micropython
 
-      - name: Check out MicroPython v1.28.0
+      - name: Check out MicroPython v1.29.0
         if: matrix.runtime == 'micropython'
         uses: actions/checkout@v7
         with:
           repository: micropython/micropython
-          ref: v1.28.0
+          ref: v1.29.0
           path: integration/micropython
 
       - name: Check out CircuitPython consumer
@@ -59,15 +57,15 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: PyDevices/lvgl-circuitpython
-          ref: 39de2c71143e0492147c4ab639bac47d00a25b2c
+          ref: d1bd6defdaef5856827051be69bf453ad8f46013
           path: integration/lvgl-circuitpython
 
-      - name: Check out CircuitPython 10.2.1
+      - name: Check out CircuitPython 10.3.0
         if: matrix.runtime == 'circuitpython'
         uses: actions/checkout@v7
         with:
           repository: adafruit/circuitpython
-          ref: 10.2.1
+          ref: 10.3.0
           path: integration/circuitpython
 
       - name: Install native build dependencies
@@ -75,20 +73,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential libffi-dev libssl-dev pkg-config
 
-      - name: Link exact bindings checkout into the aggregator
+      - name: Pin the consumer at the exact bindings checkout
+        working-directory: integration
         run: |
           bindings_sha=$(git -C lvgl-bindings rev-parse HEAD)
-          ln -s ../lvgl-bindings integration/lvgl-bindings
           if [[ "${{ matrix.runtime }}" == micropython ]]; then
-            printf '%s\n' "$bindings_sha" > integration/lvgl-micropython/LVGL_BINDINGS_COMMIT
+            printf '%s\n' "$bindings_sha" > lvgl-micropython/LVGL_BINDINGS_COMMIT
           else
-            printf '%s\n' "$bindings_sha" > integration/lvgl-circuitpython/LVGL_BINDINGS_COMMIT
+            printf '%s\n' "$bindings_sha" > lvgl-circuitpython/LVGL_BINDINGS_COMMIT
           fi
 
       - name: Build MicroPython Unix
         if: matrix.runtime == 'micropython'
-        working-directory: integration
-        run: ./build_mp.sh --port unix --variant standard
+        working-directory: integration/micropython
+        # c_module() in the consumer's manifest needs micropython-lib in the
+        # tree; the rest of the port's submodules come from `make submodules`.
+        run: |
+          git submodule update --init lib/micropython-lib
+          make -C mpy-cross -j"$(nproc)"
+          make -C ports/unix submodules
+          make -C ports/unix -j"$(nproc)" FROZEN_MANIFEST="$GITHUB_WORKSPACE/integration/lvgl-micropython/manifest.py"
 
       - name: Smoke MicroPython Unix
         if: matrix.runtime == 'micropython'
@@ -99,14 +103,23 @@ jobs:
         if: matrix.runtime == 'circuitpython'
         working-directory: integration/circuitpython
         # The unix build needs extmod/ulab, tools/huffman, and the lib/
-        # submodules; build_cp.sh's 'make submodules' did not materialize
-        # them on a fresh checkout. 'tests' is upstream CI's unix target.
-        run: python tools/ci_fetch_deps.py tests
+        # submodules; 'tests' is upstream CI's unix target.
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python tools/ci_fetch_deps.py tests
 
       - name: Build CircuitPython Unix
         if: matrix.runtime == 'circuitpython'
         working-directory: integration
-        run: ./build_cp.sh --port unix --variant coverage
+        env:
+          CP_DIR: ${{ github.workspace }}/integration/circuitpython
+          WORKSPACE_DIR: ${{ github.workspace }}/integration
+        run: |
+          ./lvgl-circuitpython/apply_cp_patches.sh --apply --port unix --variant coverage
+          make -C circuitpython/mpy-cross -j"$(nproc)"
+          make -C circuitpython/ports/unix VARIANT=coverage submodules
+          make -C circuitpython/ports/unix -j"$(nproc)" VARIANT=coverage \
+              FROZEN_MANIFEST="$GITHUB_WORKSPACE/integration/lvgl-circuitpython/manifest.py"
 
       - name: Smoke CircuitPython Unix
         if: matrix.runtime == 'circuitpython'
