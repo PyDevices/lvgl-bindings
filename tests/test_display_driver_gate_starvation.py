@@ -197,3 +197,29 @@ def test_fast_passes_keep_the_full_tick_cadence():
         "tick, expected about %d" % (passes, elapsed, period_ms, expected)
     )
     assert app_ms / elapsed >= 0.8
+
+
+def _hold_after_one_pass(work_ms, **kwargs):
+    """How long the gate stays shut after one overrunning pass."""
+    clock = _Clock()
+    lv_mock, _calls = _mock_lv(clock, work_ms)
+    event_loop = _load_event_loop_class(lv_mock, clock)
+    loop = event_loop(period_ms=10, **kwargs)
+    loop.enable()
+    clock.now = 10
+    loop.timer_cb(None)  # first pass: arms the gate from now
+    clock.now += 10
+    loop.timer_cb(None)  # this pass overruns by work_ms
+    ended = clock.now
+    return loop._next_ok_ms - ended
+
+
+def test_long_pass_holds_the_gate_no_longer_than_max_yield():
+    """A pass far longer than a repaint is the application's own work, run
+    from LVGL timers. Holding the gate for all of it again leaves the thread
+    idle and doubles the stall; the hold is capped at ``max_yield_ms``.
+    """
+    assert _hold_after_one_pass(60) == 60  # lvgl-bindings#15's case: unchanged
+    assert _hold_after_one_pass(500) == 100
+    assert _hold_after_one_pass(500, max_yield_ms=30) == 30
+    assert _hold_after_one_pass(500, max_yield_ms=0) == 10  # never under a period
