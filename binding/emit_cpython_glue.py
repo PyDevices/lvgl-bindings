@@ -37,7 +37,33 @@ def emit_phase2_enums_cpython():
         """
 /*
  * CPython phase-2 enum namespace types
+ *
+ * Members resolve through each type's tp_getattro. __dir__ lists them from a
+ * static name table, so dir(), help() and REPL completion can find them.
  */
+
+static PyObject *lvpy_enum_dir(PyObject *self, const char *const *members)
+{
+    PyObject *base = PyObject_CallMethod((PyObject *)&PyBaseObject_Type, "__dir__", "O", self);
+    if (base == NULL) {
+        return NULL;
+    }
+    PyObject *names = PySequence_List(base);
+    Py_DECREF(base);
+    if (names == NULL) {
+        return NULL;
+    }
+    for (const char *const *m = members; *m != NULL; m++) {
+        PyObject *s = PyUnicode_FromString(*m);
+        if (s == NULL || PyList_Append(names, s) < 0) {
+            Py_XDECREF(s);
+            Py_DECREF(names);
+            return NULL;
+        }
+        Py_DECREF(s);
+    }
+    return names;
+}
 """
     )
 
@@ -91,9 +117,11 @@ static PyObject *py_lv_{safe}_getattro(PyObject *self, PyObject *name)
 """.format(safe=safe)
         )
 
+        py_members = []
         for member_name, member_value in members.items():
             cval = _member_c_value(member_value)
             py_member = export_name(member_name, "enum_member")
+            py_members.append(py_member)
             if cval.startswith("LV_SYMBOL_"):
                 print(
                     '    if (strcmp(attr, "{member}") == 0) return PyUnicode_FromString({cval});'.format(
@@ -109,18 +137,37 @@ static PyObject *py_lv_{safe}_getattro(PyObject *self, PyObject *name)
 
         print(
             """
-    PyErr_Format(PyExc_AttributeError, "'{module}.{py_name}' object has no attribute '%s'", attr);
-    return NULL;
+    return PyObject_GenericGetAttr(self, name);
 }}
+
+static const char *const py_lv_{safe}_members[] = {{
+{member_list}    NULL
+}};
+
+static PyObject *py_lv_{safe}_dir(PyObject *self, PyObject *Py_UNUSED(ignored))
+{{
+    return lvpy_enum_dir(self, py_lv_{safe}_members);
+}}
+
+static PyMethodDef py_lv_{safe}_methods[] = {{
+    {{"__dir__", py_lv_{safe}_dir, METH_NOARGS, NULL}},
+    {{NULL, NULL, 0, NULL}}
+}};
 
 static PyTypeObject py_lv_{safe}_type = {{
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "{module}.{py_name}",
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_getattro = py_lv_{safe}_getattro,
+    .tp_methods = py_lv_{safe}_methods,
     .tp_doc = "LVGL {py_name} enum namespace",
 }};
-""".format(module=module_name, py_name=py_name, safe=safe)
+""".format(
+                module=module_name,
+                py_name=py_name,
+                safe=safe,
+                member_list="".join('    "{}",\n'.format(m) for m in py_members),
+            )
         )
 
     runtime.set_("obj_metadata", obj_metadata)

@@ -181,6 +181,29 @@ def test_enums(lv):
     print("OK: enum namespaces (lv.EVENT, lv.OBJ_FLAG, lv.obj.FLAG, lv.label.LONG_MODE)")
 
 
+def test_enum_dir(lv):
+    # dir() must list enum members, or tab completion and help() find nothing
+    # (lvgl-bindings#18: CPython resolved members only through tp_getattro).
+    image_align = _widget_attr(_widget_type(lv, "image"), "ALIGN")
+    cases = (
+        ("lv.EVENT", _lv_export(lv, "EVENT"), "CLICKED"),
+        ("lv.ALIGN", _lv_export(lv, "ALIGN"), "CENTER"),
+        ("lv.image.ALIGN", image_align, "CONTAIN"),
+        ("lv.obj.FLAG", _widget_attr(_widget_type(lv, "obj"), "FLAG"), "SCROLLABLE"),
+        ("lv.SYMBOL", _lv_export(lv, "SYMBOL"), "OK"),
+    )
+    for label, ns, expected in cases:
+        names = [n for n in dir(ns) if not n.startswith("_")]
+        if expected not in names:
+            _fail("dir({}) lacks {} (got {} names)".format(label, expected, len(names)))
+        for name in names:
+            try:
+                getattr(ns, name)
+            except AttributeError:
+                _fail("dir({}) lists {} but getattr fails".format(label, name))
+    print("OK: dir() lists enum members (lv.EVENT, lv.image.ALIGN, lv.SYMBOL, ...)")
+
+
 def test_module_types(lv):
     for name in ("C_Pointer", "LvReferenceError"):
         if not hasattr(lv, name):
@@ -520,6 +543,7 @@ def main():
     test_import_and_constants(lv)
     test_string_constants(lv)
     test_enums(lv)
+    test_enum_dir(lv)
     test_module_types(lv)
     test_struct_helpers(lv)
     test_widget_types(lv)
