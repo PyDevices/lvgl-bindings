@@ -823,6 +823,10 @@ def _ensure_host_pump():
     global _host_pump_timer
     if _host_pump_timer is not None and _host_pump_timer.running:
         return
+    if not any(getattr(drv, "virtual_devices", ()) for drv in _drivers):
+        # A board with no host window has nothing to drain: no timer, so a
+        # panel is not woken 100 times a second for an empty loop.
+        return
 
     def _host_pump(_t):
         for drv in _drivers:
