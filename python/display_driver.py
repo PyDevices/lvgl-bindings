@@ -73,6 +73,12 @@ LVGL_REFR_PERIOD_MS = 33
 _driver_ref = None  # primary DisplayDriver (compat)
 _drivers = []  # all DisplayDriver instances
 _host_pump_timer = None
+# LVGL owns presentation and input while it runs: the App's own refresh timer
+# and service tick stand down (app.pause_refresh, app.pause_polling), so a
+# PARTIAL panel is presented once per frame from the display's frame clock,
+# and the host events reach LVGL's indevs instead of being consumed first.
+_refresh_claim = None
+_polling_claim = None
 
 HOST = appdev.HOST
 POINTER = appdev.POINTER
@@ -741,10 +747,14 @@ def main():
     Called automatically on ``import display_driver`` using the active
     :class:`appdev.App`, or the legacy ``board_config`` fallback.
     """
-    global _driver_ref, _drivers
+    global _driver_ref, _drivers, _refresh_claim, _polling_claim
     gc.collect()
     if not lv.is_initialized():
         lv.init()
+    if _refresh_claim is None and getattr(app, "_refresh_claim", None) is None:
+        _refresh_claim = app.pause_refresh()
+    if _polling_claim is None and getattr(app, "_polling_claim", None) is None:
+        _polling_claim = app.pause_polling()
     loop_inst = event_loop.current_instance()
     if loop_inst is not None:
         # Already-running loop: pause around driver (re)construction.
@@ -768,7 +778,7 @@ def main():
     def _lvgl_shutdown_before_quit():
         # Stop the bridge before releasing the display so no callback can touch
         # LVGL state during interpreter finalization.
-        global _host_pump_timer
+        global _host_pump_timer, _refresh_claim, _polling_claim
         if _host_pump_timer is not None:
             try:
                 _host_pump_timer.deinit()
@@ -777,6 +787,18 @@ def main():
             _host_pump_timer = None
         for drv in _drivers:
             drv.release_frame_clock()
+        if _refresh_claim is not None:
+            try:
+                _refresh_claim.release()
+            except Exception:
+                pass
+            _refresh_claim = None
+        if _polling_claim is not None:
+            try:
+                _polling_claim.release()
+            except Exception:
+                pass
+            _polling_claim = None
         inst = event_loop.current_instance()
         if inst is not None:
             inst.deinit()
