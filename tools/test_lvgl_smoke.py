@@ -488,6 +488,31 @@ def test_struct_fields_and_arrays(lv):
     print("OK: struct fields, struct methods, and typed array conversion")
 
 
+def test_struct_value_from_dict(lv):
+    # A struct-by-value field takes a dict, as its type's constructor does, and
+    # a wrong type raises instead of crashing CPython (lvgl-bindings#21).
+    dsc_type = _lv_export(lv, "image_dsc_t")
+    dsc = dsc_type({"header": {"w": 4, "h": 3}, "data_size": 12})
+    if (dsc.header.w, dsc.header.h, dsc.data_size) != (4, 3, 12):
+        _fail("nested dict did not build the struct field")
+    dsc.header = {"w": 7}
+    if (dsc.header.w, dsc.header.h) != (7, 0):
+        _fail("dict assignment to a struct field did not replace it")
+    for bad in (5, "x"):
+        try:
+            dsc.header = bad
+        except TypeError:
+            pass
+        except Exception:
+            if _is_cpython():
+                _fail("wrong type for a struct field raised something other than TypeError")
+        else:
+            _fail("wrong type for a struct field was accepted: %r" % (bad,))
+    if dsc.header.w != 7:
+        _fail("a rejected assignment changed the struct field")
+    print("OK: struct fields by value from dicts; wrong types raise")
+
+
 def test_callback_deletion(lv):
     btn = _widget_type(lv, "button")(lv.screen_active())
     fired = []
@@ -561,6 +586,7 @@ def main():
             test_pointer_buffer_dereference(lv, disp)
         test_widget(lv)
         test_struct_fields_and_arrays(lv)
+        test_struct_value_from_dict(lv)
         test_event_callback(lv)
         test_callback_gc_with_widget_ref(lv)
         test_callback_gc_without_widget_ref(lv)
