@@ -3,8 +3,7 @@
 ``python/display_driver.py`` is the canonical copy of the LVGL event-loop
 helper this repo ships; consumer repos (lvgl-micropython, lvgl-circuitpython,
 lvgl-python) vendor a synced copy verbatim. Its ``event_loop.task_handler``
-and ``event_loop.async_refresh`` gate re-entrant ``lv.task_handler()`` calls
-on ``lv._nesting.value``.
+gates re-entrant ``lv.timer_handler()`` calls on ``lv._nesting.value``.
 
 ``_nesting`` is not an LVGL declaration -- it is a binding-internal callback
 re-entrancy counter, synthesized in ``analyze.py`` and deliberately marked
@@ -67,16 +66,32 @@ def _load_event_loop_class(lv_module):
     class_source = ast.get_source_segment(source, class_node)
     assert class_source, "could not extract the event_loop class source"
 
+    class _Timer:
+        ONE_SHOT = 0
+        PERIODIC = 1
+        running = False
+        name = None
+
+        def init(self, **kwargs):
+            self.running = True
+
+        def deinit(self):
+            self.running = False
+
+        def reschedule(self, _ms):
+            pass
+
+    multimer = types.SimpleNamespace(Timer=lambda _id=-1: _Timer())
+    multimer.Timer.ONE_SHOT = 0
+    multimer.Timer.PERIODIC = 1
     namespace = {
         "lv": lv_module,
         "sys": sys,
-        "asyncio_available": False,
-        "asyncio": None,
-        "ticks_ms": None,
-        "ticks_add": None,
-        "ticks_diff": None,
-        "app": None,
+        "multimer": multimer,
+        "ticks_ms": lambda: 0,
+        "ticks_diff": lambda a, b: a - b,
         "LVGL_PERIOD_MS": 10,
+        "LVGL_REFR_PERIOD_MS": 33,
         # Mirrors the module-level resolve-once line in display_driver.py:
         # present on MicroPython/CircuitPython, None on CPython, where the
         # gate stands down (C-side ContextVar owns re-entrancy there).
@@ -106,10 +121,11 @@ def _mock_lv_from_compiled_namespace(generated_c_text):
     mock.init = lambda: None
     calls = {"task_handler": 0}
 
-    def task_handler():
+    def timer_handler():
         calls["task_handler"] += 1
+        return 10
 
-    mock.task_handler = task_handler
+    mock.timer_handler = timer_handler
     return mock, names, calls
 
 
@@ -118,7 +134,7 @@ def test_micropython_globals_expose_nesting_counter():
     assert "_nesting" in names, (
         "generated/lvgl_micropython.c no longer exports _nesting; "
         "python/display_driver.py reads lv._nesting.value at runtime "
-        "(see event_loop.task_handler / event_loop.async_refresh)"
+        "(see event_loop.task_handler)"
     )
 
 
@@ -127,7 +143,7 @@ def test_circuitpython_globals_expose_nesting_counter():
     assert "_nesting" in names, (
         "generated/lvgl_circuitpython.c no longer exports _nesting; "
         "python/display_driver.py reads lv._nesting.value at runtime "
-        "(see event_loop.task_handler / event_loop.async_refresh)"
+        "(see event_loop.task_handler)"
     )
 
 
@@ -149,10 +165,10 @@ def test_task_handler_nesting_guard_runs_against_compiled_micropython_globals():
 
     assert not errors, (
         "task_handler() swallowed an exception instead of running "
-        "lv.task_handler(): %r" % (errors,)
+        "lv.timer_handler(): %r" % (errors,)
     )
     assert calls["task_handler"] == 1, (
-        "lv.task_handler() never ran; the lv._nesting.value re-entrancy "
+        "lv.timer_handler() never ran; the lv._nesting.value re-entrancy "
         "guard likely raised AttributeError and task_handler's own "
         "except-Exception swallowed it into exception_sink"
     )

@@ -701,8 +701,10 @@ class event_loop:
 
         ``wanted`` is what ``lv.timer_handler`` returned (ms until its next
         timer), capped at ``self.delay`` so input is read at least that
-        often. After a pass longer than that, the loop stays off for
-        ``min(work, max_yield_ms)``: on MicroPython the pass runs between the
+        often. A pass that took longer than that -- LVGL asking to run
+        "again now" after any real work counts -- is followed by at least a
+        period off, and by ``min(work, max_yield_ms)`` when the pass was
+        longer than a period: on MicroPython the pass runs between the
         application's own bytecodes, and resuming the instant it ended took
         ~87 % of the thread on an ESP32-P4 (lvgl-bindings#15); an uncapped
         hold doubled every UI stall on an ESP32-S3 (lvgl-bindings#19).
@@ -711,10 +713,10 @@ class event_loop:
             wanted = self.delay
         delay = min(int(wanted), self.delay)
         if work_ms > delay:
+            # The pass outran what LVGL asked for (including "again now"):
+            # at least a period off, longer for a slow pass, capped.
             self.slow_passes += 1
-            hold = min(work_ms, self.max_yield_ms)
-            if hold > delay:
-                delay = hold
+            delay = max(self.delay, min(work_ms, self.max_yield_ms))
         return max(1, delay)
 
     def _on_timer(self, timer):
