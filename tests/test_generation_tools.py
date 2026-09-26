@@ -724,6 +724,34 @@ def test_struct_pointer_helpers_preserve_target_null_and_warning_policy():
     assert "mp_write_ptr_lv_point_t" in mpy
 
 
+def test_cpython_struct_value_writer_never_dereferences_null():
+    # lvgl-bindings#21: the by-value macro dereferenced mp_write_ptr_*'s NULL
+    # on a wrong type and segfaulted CPython.
+    from binding.emit_cpython_native import _struct_value_writer
+
+    complete = _struct_value_writer("lv_image_header_t", "lv_image_header_t", "", True)
+    assert "mp_write_value_ptr_lv_image_header_t(struct_obj)" in complete
+    assert "PyDict_Check(value)" in complete
+    assert "return &mp_write_scratch_lv_image_header_t;" in complete
+    assert "(*((lv_image_header_t*)mp_write_ptr_lv_image_header_t(struct_obj)))" not in complete
+
+    # A struct with no fields has no size to give a scratch copy.
+    opaque = _struct_value_writer("lv_opaque_t", "lv_opaque_t", "struct ", False)
+    assert "mp_write_scratch" not in opaque
+    assert "#define mp_write_lv_opaque_t" in opaque
+
+
+def test_generated_cpython_setters_return_conversion_errors():
+    text = (REPO_ROOT / "generated" / "lvgl_python.c").read_text(encoding="utf-8")
+    setter = text[text.index("static int py_lv_image_dsc_t_setattro"):]
+    setter = setter[: setter.index("\n}\n")]
+    # A failed conversion has already stored its placeholder, so the setter
+    # puts the struct back before it returns the error.
+    assert "memcpy(&saved, data, sizeof(saved));" in setter
+    assert "if (PyErr_Occurred()) {\n        memcpy(data, &saved, sizeof(saved));\n        return -1;" in setter
+    assert "#define mp_write_lv_image_header_t(struct_obj) (*((lv_image_header_t*)mp_write_value_ptr_lv_image_header_t(struct_obj)))" in text
+
+
 def test_module_registration_plan_preserves_phase_gates_and_declaration_order():
     functions = (SimpleNamespace(name="lv_init"), SimpleNamespace(name="lv_tick_inc"))
     full = module_registration_plan(

@@ -187,6 +187,46 @@ typedef union {
     try_generate_struct_cpython("C_Pointer", ast.ext[0].type.type)
 
 
+def _struct_value_writer(struct_name, san, struct_tag, complete):
+    """C for ``mp_write_<san>``: a Python value to a struct by value.
+
+    The value form is dereferenced where it is used (``data->header =
+    mp_write_...(value)``), so it must never yield NULL. A dict builds the
+    struct the way the type's own constructor does, as MicroPython accepts;
+    anything else sets ``TypeError`` and yields a zeroed scratch copy, which
+    the caller discards when it sees the error (lvgl-bindings#21).
+    """
+    ctype = "{tag}{name}".format(tag=struct_tag, name=struct_name)
+    if not complete:
+        return "#define mp_write_{san}(struct_obj) (*(({ctype}*)mp_write_ptr_{san}(struct_obj)))".format(
+            san=san, ctype=ctype
+        )
+    return """static {ctype} mp_write_scratch_{san};
+
+static inline void* mp_write_value_ptr_{san}(PyObject *value)
+{{
+    if (value != NULL && PyDict_Check(value)) {{
+        PyObject *tmp = PyObject_CallOneArg((PyObject *)&py_{san}_type, value);
+        if (tmp != NULL) {{
+            memcpy(&mp_write_scratch_{san}, ((py_lv_struct_t *)tmp)->data, sizeof({ctype}));
+            Py_DECREF(tmp);
+            return &mp_write_scratch_{san};
+        }}
+    }} else if (value != NULL && value != Py_None) {{
+        void *p = mp_write_ptr_{san}(value);
+        if (p != NULL) return p;
+    }} else {{
+        PyErr_SetString(PyExc_TypeError, "Expected lvgl.{san} or dict, got None");
+    }}
+    memset(&mp_write_scratch_{san}, 0, sizeof({ctype}));
+    return &mp_write_scratch_{san};
+}}
+
+#define mp_write_{san}(struct_obj) (*(({ctype}*)mp_write_value_ptr_{san}(struct_obj)))""".format(
+        san=san, ctype=ctype
+    )
+
+
 def try_generate_struct_cpython(struct_name, struct):
     gen = _h("gen")
     sanitize = _h("sanitize")
@@ -404,7 +444,12 @@ static int py_{san}_setattro(PyObject *self, PyObject *name, PyObject *value)
     const char *attr = PyUnicode_AsUTF8(name);
     if (attr == NULL) return -1;
     int result = -1;
+    {save_fields}
     {write_cases}
+    if (PyErr_Occurred()) {{
+        {restore_fields}
+        return -1;
+    }}
     if (result < 0) {{
         PyErr_Format(PyExc_AttributeError, "'{struct_name}' object has no attribute '%s'", attr);
     }}
@@ -444,7 +489,7 @@ static inline void* mp_write_ptr_{san}(PyObject *self_in)
     return ({struct_tag}{struct_name}*)self->data;
 }}
 
-#define mp_write_{san}(struct_obj) (*(({struct_tag}{struct_name}*)mp_write_ptr_{san}(struct_obj)))
+{write_value}
 
 static inline PyObject *mp_read_ptr_{san}(void *field)
 {{
@@ -460,6 +505,23 @@ static inline PyObject *mp_read_ptr_{san}(void *field)
             read_cases="\n    ".join(read_cases) if read_cases else "(void)attr;",
             write_cases="\n    ".join(write_cases) if write_cases else "(void)value;",
             elem_size=elem_size_expr,
+            # A conversion that fails has already stored its placeholder, so
+            # the field is put back as it was (lvgl-bindings#21).
+            save_fields=(
+                "{t}{n} saved;\n    memcpy(&saved, data, sizeof(saved));".format(
+                    t=struct_tag, n=struct_name
+                )
+                if struct_has_fields and write_cases
+                else ""
+            ),
+            restore_fields=(
+                "memcpy(data, &saved, sizeof(saved));"
+                if struct_has_fields and write_cases
+                else ""
+            ),
+            write_value=_struct_value_writer(
+                struct_name, sanitized_struct_name, struct_tag, struct_has_fields
+            ),
         )
     )
 
