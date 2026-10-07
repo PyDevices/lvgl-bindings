@@ -101,7 +101,7 @@ and machine-checked without changing the shared canonical API contract.
 
 ### Work
 
-- [x] Update `/home/brad/gh/pydevices/lvgl-bindings/requirements.txt` to
+- [x] Update `requirements.txt` to
   `pycparser==3.0`.
 - [x] Vendor or refresh fake-libc headers from the matching pycparser release.
 - [x] Add deterministic preprocessing and artifact hashing.

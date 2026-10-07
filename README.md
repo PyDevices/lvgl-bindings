@@ -36,6 +36,8 @@ consumer repo get silently overwritten by the next sync. See
   artifact changes from the pre-rebuild generator.
 - [docs/](docs/) — the full index.
 
+What's planned next is in [ROADMAP.md](ROADMAP.md).
+
 ## Layout
 
 ```
