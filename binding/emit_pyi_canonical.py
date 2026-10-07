@@ -221,7 +221,7 @@ class CanonicalPyiEmitter:
         # _nesting is deliberately private in the canonical API model (see
         # api_model.build_api_model) but still stubbed here: it is a real
         # runtime attribute on MicroPython/CircuitPython, and
-        # python/display_driver.py (shipped in this repo) depends on its
+        # PyDevices' display_driver.py (pydevices lib/) depends on its
         # public shape (`.value: int`).
         self._add("class _Nesting:")
         self._add("value: int", 1)

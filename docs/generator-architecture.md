@@ -89,15 +89,15 @@ with `visibility="private"`. Despite being private, it is deliberately still
 emitted as a real MicroPython/CircuitPython module global (see
 `emit_backend.module_registration_plan` and the blob-table loop in
 `emit_c_micropython_style.py`) and stubbed as `_nesting: _Nesting` (see
-`CanonicalPyiEmitter`), because `python/display_driver.py` — the LVGL
-event-loop helper this repo ships and every consumer syncs verbatim — reads
+`CanonicalPyiEmitter`), because `display_driver.py` — PyDevices' LVGL
+coordinator, in PyDevices/pydevices `lib/` — reads
 `lv._nesting.value` at runtime to detect reentrant `lv.task_handler()`
 calls from inside an LVGL callback. From inside this translation unit the
 counter looks unused (nothing here reads it back), but its only reader is
 Python code outside the generated C; do not remove it on that "dead code"
-appearance. `tests/test_display_driver_nesting_integration.py` guards this
-by executing the helper's actual re-entrancy-guarded code path against a
-mock built from the freshly generated MicroPython/CircuitPython namespaces.
+appearance. `tests/test_nesting_export.py` guards this by reading the names
+the freshly generated MicroPython/CircuitPython C exports; pydevices'
+`tests/test_lvgl_display_driver.py` holds the reader's side.
 
 ## Commands and validation
 

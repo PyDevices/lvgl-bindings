@@ -1,7 +1,7 @@
 # lvgl-bindings documentation
 
 - [Using LVGL with PyDevices](using-lvgl-with-pydevices.md) — the sister
-  projects, wiring `board_config` to LVGL, what `display_driver` does, and the
+  projects, wiring `board_config` to LVGL, what PyDevices' `display_driver` does, and the
   sync/async timer contract.
 - [Loading fonts at runtime](fonts.md) — the `fonts/*.bin` collection,
   `fs_driver.py`, and converting your own fonts; no firmware rebuild needed.

@@ -1,7 +1,8 @@
 # Using LVGL with PyDevices
 
 How to run [LVGL](https://lvgl.io/) on the PyDevices display, input, and timing
-packages, and what [`python/display_driver.py`](../python/display_driver.py)
+packages, and what PyDevices'
+[`display_driver.py`](https://github.com/PyDevices/pydevices/blob/main/lib/display_driver.py)
 does for you.
 
 ## The three sister projects
@@ -28,7 +29,7 @@ of the sister projects.
 ```python
 import mip
 INDEX = "https://PyDevices.github.io/mip"
-mip.install("pydevices", index=INDEX)  # displaydev, appdev, and the rest of lib/
+mip.install("pydevices", index=INDEX)  # displaydev, appdev, display_driver and the rest of lib/
 mip.install("github:PyDevices/pydevices/board_configs/<your_board>")
 ```
 
@@ -62,11 +63,12 @@ for you.
 
 ## `display_driver`
 
-[`python/display_driver.py`](../python/display_driver.py) is the LVGL coordinator.
-It ships with all three sister projects (frozen into the MicroPython and
-CircuitPython firmwares, bundled with `pydevices-lvgl`). It requires a PyDevices
-`board_config`, `events`, `keys`, and `multimer`, and is **independent of the
-optional `appdev` package**.
+[`display_driver.py`](https://github.com/PyDevices/pydevices/blob/main/lib/display_driver.py)
+is the LVGL coordinator. It lives in PyDevices/pydevices and ships with
+`pydevices` (the mip package, the wheel, and the frozen module in a
+micropython-pydevices build), beside the `board_config` idiom, `appdev`,
+`events`, `keys` and `multimer` it needs. The sister projects here carry only
+`lvgl` and `fs_driver`.
 
 With `display_driver`, LVGL input is wired automatically through its own
 `app` (an `appdev.App`) and virtual touch / encoder / keypad devices.
