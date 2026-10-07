@@ -142,7 +142,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: PyDevices/lvgl-python
-          ref: 7883313f802d891232fe6af0c8cd1e362d4662f6
+          ref: 4bc903ce98b5c2862e56e6bf2c4a38b85b09d58e
           path: lvgl-python
           submodules: recursive
 

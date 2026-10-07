@@ -213,8 +213,8 @@ def test_module_types(lv):
             _fail("private implementation export leaked as lv.{}".format(name))
     # _nesting is a deliberate, audited exception to the private-export
     # policy above: it is the binding-internal callback re-entrancy
-    # counter that python/display_driver.py (shipped in this repo, synced
-    # into every consumer) reads at runtime as lv._nesting.value to guard
+    # counter that PyDevices' display_driver.py (pydevices lib/) reads at
+    # runtime as lv._nesting.value to guard
     # against reentrant lv.task_handler() calls. It is private in the
     # canonical API model (visibility="private" in api_model.py) but is
     # still deliberately emitted for MicroPython/CircuitPython -- see
@@ -229,7 +229,7 @@ def test_module_types(lv):
     else:
         if not hasattr(lv, "_nesting"):
             _fail(
-                "lv._nesting missing; python/display_driver.py's "
+                "lv._nesting missing; PyDevices' display_driver.py "
                 "task_handler()/async_refresh() read lv._nesting.value "
                 "and will raise AttributeError at runtime"
             )

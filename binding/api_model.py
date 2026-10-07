@@ -1189,7 +1189,7 @@ def build_api_model(
     # analyze.py's `blobs` (see analyze.py). It is deliberately private
     # (not part of the documented public API) but still emitted as a real
     # MicroPython/CircuitPython module global and stubbed, because
-    # python/display_driver.py (shipped in this repo) depends on it to
+    # PyDevices' display_driver.py (pydevices lib/) depends on it to
     # detect reentrant lv.task_handler() calls. See emit_backend.py's
     # module_registration_plan and emit_pyi_canonical.py's CanonicalPyiEmitter
     # for the matching audited exceptions.

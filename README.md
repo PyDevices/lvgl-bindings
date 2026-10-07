@@ -27,7 +27,7 @@ consumer repo get silently overwritten by the next sync. See
 ## Documentation
 
 - [Using LVGL with PyDevices](docs/using-lvgl-with-pydevices.md) — how the three
-  sister projects fit together, and what `python/display_driver.py` does.
+  sister projects fit together, and what PyDevices' `display_driver` does.
 - [Loading fonts at runtime](docs/fonts.md) — `fonts/*.bin` and
   `python/fs_driver.py`: any built-in font without a firmware rebuild.
 - [Generator architecture](docs/generator-architecture.md) — canonical model,
@@ -44,7 +44,7 @@ lvgl-bindings/
   lvgl/                 # LVGL submodule (git submodule update --init)
   lv_conf.h             # Shared LVGL config for all targets
   generated/            # Generated bindings, API model, and shared stub (committed)
-  python/               # Hand-written helpers (display_driver.py — committed)
+  python/               # Hand-written helpers (fs_driver.py — committed)
   packages/             # Optional MIP manifests
   regenerate_all.sh     # Primary entry point for regenerating all binding artifacts
   docs/                 # Architecture, migration, release, and fonts documentation
@@ -78,7 +78,7 @@ static-checking tools used by the validation commands below.
 
 ## Typical workflow
 
-The practical flow is: make a small change in **`binding/`** or the LVGL submodule, regenerate the binding target you need, sync the generated files into the consumer repo, and then rebuild that repo’s firmware or extension. If you only touched the Python-side glue, start with **`python/display_driver.py`** and the consumer sync script; if you changed the C API surface or LVGL headers, regenerate the relevant target first and rebuild the consumer before trusting the result.
+The practical flow is: make a small change in **`binding/`** or the LVGL submodule, regenerate the binding target you need, sync the generated files into the consumer repo, and then rebuild that repo’s firmware or extension. If you only touched the Python-side glue, start with **`python/fs_driver.py`** and the consumer sync script (LVGL's PyDevices coordinator, `display_driver.py`, is in PyDevices/pydevices and ships without a bindings release); if you changed the C API surface or LVGL headers, regenerate the relevant target first and rebuild the consumer before trusting the result.
 
 ## Generate bindings
 
@@ -148,24 +148,21 @@ After regen, rebuild the consumer repo(s) (`lvgl-micropython`,
 
 Release workflow and tagging: [releasing-bindings.md](docs/releasing-bindings.md).
 
-## `display_driver.py` & Timer Integration
+## `display_driver`
 
-`display_driver.py` is the canonical PyDevices LVGL coordinator:
-- It connects the LVGL event loop to `displaydev` and `multimer` without requiring `appdev`.
-- **Automatic Timer Startup**: Simply importing `display_driver` initializes the display, registers input devices, and starts the background hardware interrupt/signal timer.
-- **Interactive REPL**: On MicroPython (`machine.Timer`), Linux desktop (`librt`), and Windows (`uwin32`), you can construct LVGL widgets and drop out to the interactive `>>>` prompt without any loop—the UI and animations keep running live in the background.
-- **Standalone Desktop Applications**: Standalone scripts include `app.run()` to keep the desktop process alive.
-
-See [`python/README.md`](python/README.md). Edit `python/display_driver.py` here,
-commit the complete regenerated source, then sync that exact 40-character commit
-or release tag into each consumer.
+The coordinator that wires LVGL to a PyDevices `board_config` (display flush,
+input devices and the `multimer` event loop) is `display_driver.py` in
+[PyDevices/pydevices `lib/`](https://github.com/PyDevices/pydevices/blob/main/lib/display_driver.py).
+It ships with `pydevices` because it needs `appdev`, `events`, `keys` and
+`multimer`; the bindings don't, so you can use them with plumbing of your own.
+[Using LVGL with PyDevices](docs/using-lvgl-with-pydevices.md) covers what it does.
 
 ## Consumers
 
 | Repo | Role & Sync |
 |---|---|
-| [lvgl-micropython](https://github.com/PyDevices/lvgl-micropython) | MicroPython C module: `generated/lvgl_micropython.c`, `lvgl/`, `lv_conf.h`, `python/display_driver.py` → `lib/` |
-| [lvgl-circuitpython](https://github.com/PyDevices/lvgl-circuitpython) | CircuitPython tree patches: `generated/lvgl_circuitpython.c`, `generated/lvgl_circuitpython.h`, `lvgl/`, `lv_conf.h`, `python/display_driver.py` → `lib/` |
+| [lvgl-micropython](https://github.com/PyDevices/lvgl-micropython) | MicroPython C module: `generated/lvgl_micropython.c`, `lvgl/`, `lv_conf.h`, `python/fs_driver.py` → `lib/` |
+| [lvgl-circuitpython](https://github.com/PyDevices/lvgl-circuitpython) | CircuitPython tree patches: `generated/lvgl_circuitpython.c`, `generated/lvgl_circuitpython.h`, `lvgl/`, `lv_conf.h`, `python/fs_driver.py` → `lib/` |
 | [lvgl-python](https://github.com/PyDevices/lvgl-python) | CPython extension & TestPyPI wheel publisher: exact-commit `generated/lvgl_python.c`, `generated/lvgl.pyi`, `lvgl/`, `lv_conf.h`, and helpers (see [releasing-bindings.md](docs/releasing-bindings.md)) |
 
 Each consumer records the resolved source SHA in `LVGL_BINDINGS_COMMIT`.
