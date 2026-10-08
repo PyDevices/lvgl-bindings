@@ -283,8 +283,19 @@
 #define LV_USE_ASSERT_OBJ           0   /*Check the object's type and existence (e.g. not deleted). (Slow)*/
 
 /*Add a custom handler when assert happens e.g. to restart the MCU*/
+#if defined(LV_CIRCUITPYTHON_BUILD)
+    /* A halted board drops off USB and needs a hand on its reset button to
+     * come back. On CircuitPython an assertion (most often an allocation that
+     * failed: the heap is full) reboots into safe mode instead, which says
+     * "Third-party firmware fatal error." and leaves CIRCUITPY reachable.
+     * lvgl-circuitpython provides the function. */
+    #define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
+    void lv_circuitpython_assert_failed(void);
+    #define LV_ASSERT_HANDLER lv_circuitpython_assert_failed();
+#else
 #define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
 #define LV_ASSERT_HANDLER while(1);   /*Halt by default*/
+#endif
 
 /*-------------
  * Debug
