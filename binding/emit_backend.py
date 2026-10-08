@@ -524,14 +524,19 @@ def mp_obj_get_ull_to_bytes_source():
     """Return the VM-version-safe 64-bit integer conversion lowering.
 
     MicroPython 1.29 renamed ``mp_obj_int_to_bytes_impl`` and changed its
-    signature.  CircuitPython follows the MicroPython core it is built on:
-    10.x (MicroPython 1.27) has the former helper, 11.0 (MicroPython 1.29)
-    the new one, so the core's version decides for both interpreters.  The
-    two native emitters share this lowering, so it belongs to their shared
-    backend contract rather than to either emitter's large C template.
+    signature.  CircuitPython 11.0 is built on MicroPython 1.29 and has only
+    the new helper; 10.x is MicroPython 1.27 and has only the old one.  On
+    CircuitPython, ``MICROPY_VERSION_MAJOR`` is CircuitPython's own major
+    (genhdr/mpversion.h), not the core's, so the two are told apart by that.
+    The two native emitters share this lowering, so it belongs to their
+    shared backend contract rather than to either emitter's large C template.
     """
     return (
-        "#if defined(MICROPY_VERSION_MAJOR) && defined(MICROPY_VERSION_MINOR) && \\\n"
+        "#if defined(CIRCUITPY) && CIRCUITPY && MICROPY_VERSION_MAJOR < 11\n"
+        "    mp_obj_int_to_bytes_impl(obj, big_endian, sizeof(val), (byte*)&val);\n"
+        "#elif defined(CIRCUITPY) && CIRCUITPY\n"
+        "    mp_obj_int_to_bytes(obj, sizeof(val), (byte*)&val, big_endian, false, false);\n"
+        "#elif defined(MICROPY_VERSION_MAJOR) && defined(MICROPY_VERSION_MINOR) && \\\n"
         "    ((MICROPY_VERSION_MAJOR > 1) || "
         "(MICROPY_VERSION_MAJOR == 1 && MICROPY_VERSION_MINOR > 28))\n"
         "    mp_obj_int_to_bytes(obj, sizeof(val), (byte*)&val, big_endian, false, false);\n"

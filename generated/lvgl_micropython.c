@@ -877,7 +877,11 @@ static unsigned long long mp_obj_get_ull(mp_obj_t obj)
 
     unsigned long long val = 0;
     bool big_endian = !(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__);
-    #if defined(MICROPY_VERSION_MAJOR) && defined(MICROPY_VERSION_MINOR) && \
+    #if defined(CIRCUITPY) && CIRCUITPY && MICROPY_VERSION_MAJOR < 11
+    mp_obj_int_to_bytes_impl(obj, big_endian, sizeof(val), (byte*)&val);
+#elif defined(CIRCUITPY) && CIRCUITPY
+    mp_obj_int_to_bytes(obj, sizeof(val), (byte*)&val, big_endian, false, false);
+#elif defined(MICROPY_VERSION_MAJOR) && defined(MICROPY_VERSION_MINOR) && \
     ((MICROPY_VERSION_MAJOR > 1) || (MICROPY_VERSION_MAJOR == 1 && MICROPY_VERSION_MINOR > 28))
     mp_obj_int_to_bytes(obj, sizeof(val), (byte*)&val, big_endian, false, false);
 #else
