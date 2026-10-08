@@ -577,10 +577,12 @@ def test_cpython_native_helper_binding_does_not_use_shared_runtime_state():
 def test_mp_64_bit_integer_lowering_is_shared_and_version_safe():
     source = mp_obj_get_ull_to_bytes_source()
 
-    assert "#if defined(CIRCUITPY)" in source
+    # CircuitPython 11 is MicroPython 1.29 underneath and has only the new
+    # helper, so the core's version decides, never CIRCUITPY.
+    assert "CIRCUITPY" not in source
     assert "MICROPY_VERSION_MAJOR" in source
     assert "mp_obj_int_to_bytes(obj, sizeof(val)" in source
-    assert source.count("mp_obj_int_to_bytes_impl") == 2
+    assert source.count("mp_obj_int_to_bytes_impl") == 1
 
 
 def test_function_return_lowering_preserves_void_and_pointer_conversion_policy():
