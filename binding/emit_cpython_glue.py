@@ -219,6 +219,14 @@ def finish_py_module(max_phase):
 
 static int lvgl_mod_initialized = 0;
 
+/* A build of this module can run its own setup right after lv_init() by
+ * defining LVPY_AFTER_LV_INIT as the name of a void(void) function: lvgl-python
+ * registers jpegio's JPEG decoder there. A macro rather than a weak symbol, so
+ * it works with every compiler a wheel is built with. */
+#ifdef LVPY_AFTER_LV_INIT
+extern void LVPY_AFTER_LV_INIT(void);
+#endif
+
 static PyObject *py_lvgl_init(PyObject *self, PyObject *args)
 {
     (void)self;
@@ -226,6 +234,9 @@ static PyObject *py_lvgl_init(PyObject *self, PyObject *args)
     lvpy_lock();
     if (!lvgl_mod_initialized) {
         lv_init();
+#ifdef LVPY_AFTER_LV_INIT
+        LVPY_AFTER_LV_INIT();
+#endif
         lvgl_mod_initialized = 1;
     }
     lvpy_unlock();

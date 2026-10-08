@@ -1,5 +1,5 @@
 {
-  "api_hash": "d6562dc4a627712d83a68ad8cb03c5a3f3b427593a928720c0c0695216e00443",
+  "api_hash": "41a53e83f38560d1eec5d8cbe6133db5decfdefd2027a5bf48ef591740444268",
   "constants": [
     {
       "available_on": [
@@ -156853,6 +156853,8 @@
     },
     {
       "available_on": [
+        "micropython",
+        "circuitpython",
         "cpython"
       ],
       "c_name": "lv_tjpgd_deinit",
@@ -156863,6 +156865,7 @@
         "line": 4959
       },
       "parameters": [],
+      "policy_reason": "LV_USE_TJPGD is 0 on every target: the JPEG decoder is jpegio's, registered through lv_image_decoder_create by displayif (MicroPython), lvgl-circuitpython (CircuitPython) and lvgl-python (CPython); one TJpgDec per build (displayif#23, lvgl-bindings#14, lvgl-python#23).",
       "python_name": "tjpgd_deinit",
       "return_type": {
         "kind": "primitive",
@@ -156877,10 +156880,12 @@
       "static": false,
       "storage": [],
       "variadic": false,
-      "visibility": "public"
+      "visibility": "private"
     },
     {
       "available_on": [
+        "micropython",
+        "circuitpython",
         "cpython"
       ],
       "c_name": "lv_tjpgd_init",
@@ -156891,6 +156896,7 @@
         "line": 4958
       },
       "parameters": [],
+      "policy_reason": "LV_USE_TJPGD is 0 on every target: the JPEG decoder is jpegio's, registered through lv_image_decoder_create by displayif (MicroPython), lvgl-circuitpython (CircuitPython) and lvgl-python (CPython); one TJpgDec per build (displayif#23, lvgl-bindings#14, lvgl-python#23).",
       "python_name": "tjpgd_init",
       "return_type": {
         "kind": "primitive",
@@ -156905,7 +156911,7 @@
       "static": false,
       "storage": [],
       "variadic": false,
-      "visibility": "public"
+      "visibility": "private"
     },
     {
       "available_on": [

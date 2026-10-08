@@ -20,6 +20,16 @@
       "name": "lv_global_default",
       "reason": "Returns LVGL's private process-global state, whose implementation fields are deliberately not part of the Python API.",
       "test": "tests/test_api_policy.py::test_private_global_accessor_is_not_public"
+    },
+    {
+      "name": "lv_tjpgd_deinit",
+      "reason": "LV_USE_TJPGD is 0 on every target: the JPEG decoder is jpegio's, registered through lv_image_decoder_create by displayif (MicroPython), lvgl-circuitpython (CircuitPython) and lvgl-python (CPython); one TJpgDec per build (displayif#23, lvgl-bindings#14, lvgl-python#23).",
+      "test": "tests/test_api_policy.py::test_tjpgd_is_private_on_every_target"
+    },
+    {
+      "name": "lv_tjpgd_init",
+      "reason": "LV_USE_TJPGD is 0 on every target: the JPEG decoder is jpegio's, registered through lv_image_decoder_create by displayif (MicroPython), lvgl-circuitpython (CircuitPython) and lvgl-python (CPython); one TJpgDec per build (displayif#23, lvgl-bindings#14, lvgl-python#23).",
+      "test": "tests/test_api_policy.py::test_tjpgd_is_private_on_every_target"
     }
   ],
   "unsupported_functions": [
@@ -160,30 +170,5 @@
       "test": "tests/test_api_policy.py::test_internal_callback_hooks_are_not_public"
     }
   ],
-  "target_exceptions": [
-    {
-      "name": "lv_tjpgd_deinit",
-      "target": "circuitpython",
-      "reason": "LV_USE_TJPGD is 0 on CircuitPython: the JPEG decoder is jpegio's, registered through lv_image_decoder_create by lvgl-circuitpython; one TJpgDec per firmware (displayif#23, lvgl-bindings#14).",
-      "test": "tests/test_verify_pyi.py::test_target_specific_stubs_match_the_real_exception_policy"
-    },
-    {
-      "name": "lv_tjpgd_deinit",
-      "target": "micropython",
-      "reason": "LV_USE_TJPGD is 0 on MicroPython: the JPEG decoder is jpegio's, registered through lv_image_decoder_create by displayif; one TJpgDec per firmware (displayif#23, lvgl-bindings#14).",
-      "test": "tests/test_verify_pyi.py::test_target_specific_stubs_match_the_real_exception_policy"
-    },
-    {
-      "name": "lv_tjpgd_init",
-      "target": "circuitpython",
-      "reason": "LV_USE_TJPGD is 0 on CircuitPython: the JPEG decoder is jpegio's, registered through lv_image_decoder_create by lvgl-circuitpython; one TJpgDec per firmware (displayif#23, lvgl-bindings#14).",
-      "test": "tests/test_verify_pyi.py::test_target_specific_stubs_match_the_real_exception_policy"
-    },
-    {
-      "name": "lv_tjpgd_init",
-      "target": "micropython",
-      "reason": "LV_USE_TJPGD is 0 on MicroPython: the JPEG decoder is jpegio's, registered through lv_image_decoder_create by displayif; one TJpgDec per firmware (displayif#23, lvgl-bindings#14).",
-      "test": "tests/test_verify_pyi.py::test_target_specific_stubs_match_the_real_exception_policy"
-    }
-  ]
+  "target_exceptions": []
 }
