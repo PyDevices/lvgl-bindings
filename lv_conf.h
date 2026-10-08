@@ -288,10 +288,11 @@
      * come back. On CircuitPython an assertion (most often an allocation that
      * failed: the heap is full) reboots into safe mode instead, which says
      * "Third-party firmware fatal error." and leaves CIRCUITPY reachable.
-     * lvgl-circuitpython provides the function. */
+     * lvgl-circuitpython provides the function; it is weak here, so a
+     * consumer without it still links and halts as before. */
     #define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
-    void lv_circuitpython_assert_failed(void);
-    #define LV_ASSERT_HANDLER lv_circuitpython_assert_failed();
+    __attribute__((weak)) void lv_circuitpython_assert_failed(void);
+    #define LV_ASSERT_HANDLER { if (lv_circuitpython_assert_failed) { lv_circuitpython_assert_failed(); } while(1); }
 #else
 #define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
 #define LV_ASSERT_HANDLER while(1);   /*Halt by default*/
