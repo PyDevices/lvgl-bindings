@@ -26,8 +26,9 @@ consumer repo get silently overwritten by the next sync. See
 
 ## Documentation
 
-- [Using LVGL with PyDevices](docs/using-lvgl-with-pydevices.md) — how the three
-  sister projects fit together, and what PyDevices' `display_driver` does.
+- [Using LVGL with PyDevices](https://github.com/PyDevices/pydevices/blob/main/docs/lvgl.md) (in PyDevices/pydevices,
+  beside `display_driver`) — how the three sister projects fit together, and
+  what `display_driver` does.
 - [Loading fonts at runtime](docs/fonts.md) — `fonts/*.bin` and
   `python/fs_driver.py`: any built-in font without a firmware rebuild.
 - [Generator architecture](docs/generator-architecture.md) — canonical model,
@@ -157,7 +158,7 @@ input devices and the `multimer` event loop) is `display_driver.py` in
 [PyDevices/pydevices `lib/`](https://github.com/PyDevices/pydevices/blob/main/lib/display_driver.py).
 It ships with `pydevices` because it needs `appdev`, `events`, `keys` and
 `multimer`; the bindings don't, so you can use them with plumbing of your own.
-[Using LVGL with PyDevices](docs/using-lvgl-with-pydevices.md) covers what it does.
+[Using LVGL with PyDevices](https://github.com/PyDevices/pydevices/blob/main/docs/lvgl.md) covers what it does.
 
 ## Consumers
 
