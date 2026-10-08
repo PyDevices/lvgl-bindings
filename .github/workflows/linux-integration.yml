@@ -1,9 +1,16 @@
 name: Linux integration
 
+# Documentation-only changes can't change this result, so they don't run it.
 on:
-  pull_request:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
   workflow_call:
     inputs:
       bindings-ref:
