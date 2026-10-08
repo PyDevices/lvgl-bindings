@@ -93,17 +93,18 @@ def test_symbol_identifier_enum_is_private():
     assert enum.visibility == "private"
 
 
-def test_tjpgd_exception_is_target_specific():
-    # LV_USE_TJPGD is 0 on MicroPython and CircuitPython (jpegio owns the JPEG
-    # decoder there); only CPython keeps LVGL's built-in TJPGD.
+def test_tjpgd_is_private_on_every_target():
+    # LV_USE_TJPGD is 0 on every target: jpegio owns the JPEG decoder on
+    # MicroPython, CircuitPython and CPython alike, so LVGL's own decoder
+    # hooks are not part of any target's API.
     ir = parse_source(
         "void lv_tjpgd_init(void); void lv_tjpgd_deinit(void);"
     )
     model = build_api_model(ir)
     functions = {function.c_name: function for function in model.functions}
 
-    assert functions["lv_tjpgd_init"].available_on == ("cpython",)
-    assert functions["lv_tjpgd_deinit"].available_on == ("cpython",)
+    assert functions["lv_tjpgd_init"].visibility == "private"
+    assert functions["lv_tjpgd_deinit"].visibility == "private"
 
 
 def test_policy_file_is_complete_for_the_current_translation_unit():
@@ -120,7 +121,6 @@ def test_policy_records_have_reason_and_test_references():
 
     assert policy.private_functions
     assert policy.private_structs
-    assert policy.target_exceptions
     for record in policy.private_functions.values():
         assert record.reason and record.test
     for record in policy.unsupported_functions.values():
