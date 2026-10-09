@@ -124,9 +124,10 @@ historical upstream baseline. `scratch/upstream_baseline/run.sh` verifies that
 the pinned upstream generator still reproduces that baseline without placing
 its source or full outputs in this repository.
 
-Consumer builds are part of integration validation: MicroPython and
-CircuitPython begin with the aggregator workspace's `build_mp.sh` and
-`build_cp.sh` orchestrators; CPython rebuilds its extension and wheel from the
-synced source.
+Consumer builds are part of integration validation: `linux-integration.yml`
+builds the MicroPython and CircuitPython unix ports with lvgl-micropython and
+lvgl-circuitpython pinned at the commit under test and runs
+`tools/test_lvgl_smoke.py` on each; CPython rebuilds its extension and wheel
+from the synced source.
 See [releasing-bindings.md](releasing-bindings.md) for exact-commit
 synchronization and publication boundaries.

@@ -66,7 +66,7 @@ cd lvgl-bindings
 git submodule update --init lvgl
 ```
 
-Place `lvgl-bindings/` as a sibling of `lvgl-micropython/`, `lvgl-circuitpython/`, and/or `lvgl-python/` in your workspace. (The org's [aggregator workspace](https://github.com/PyDevices/cmods) is an optional convenience — not required.)
+The consumer repos don't need this clone beside them: each one's `scripts/sync_from_lvgl_bindings.sh` fetches an exact commit from GitHub, and `LV_BINDINGS_REPO` points it at your own clone or fork instead.
 
 ## Setup
 
