@@ -340,12 +340,13 @@ def try_generate_struct_cpython(struct_name, struct):
                         decl, "Missing 'user_data' member in struct '%s'" % struct_name
                     )
             write_cases.append(
-                'if (strcmp(attr, "{field}") == 0) {{ data->{decl_name} = {cast}mp_lv_callback(value, {lv_callback}, "{struct_name}_{field}", {user_data}, NULL, NULL, NULL); result = 0; }}'.format(
+                'if (strcmp(attr, "{field}") == 0) {{ data->{decl_name} = {cast}mp_lv_callback(value, {lv_callback}, "{struct_name}_{field}", {user_data}, {holder}, NULL, NULL); result = 0; }}'.format(
                     struct_name=struct_name,
                     field=sanitize(decl.name),
                     decl_name=decl.name,
                     lv_callback=lv_callback,
                     user_data=full_user_data_ptr,
+                    holder="data" if full_user_data_ptr.startswith("&data->") else "NULL",
                     cast=cast,
                 )
             )
@@ -860,6 +861,9 @@ def build_py_callback_arg(arg, index, func, py_var):
             else:
                 if user_data:
                     full_user_data = "&%s->%s" % (first_arg.name, user_data)
+                    # The struct holds the dict: every callback set on it
+                    # shares one reference, released with the struct.
+                    containing_struct = first_arg.name
                 elif user_data_getter_fn and user_data_setter_fn:
                     full_user_data = "NULL"
                     containing_struct = first_arg.name
@@ -1222,7 +1226,16 @@ def gen_py_func(func, obj_name):
     pre_lv_call = ""
     post_lv_call = ""
     fname = func.name
-    if fname.endswith("_remove_event_cb_with_user_data"):
+    # A timer or a started animation holds its callback dict through LVGL's
+    # ext_data free_cb (lvpy_runtime.c): LVGL releases it on every path that
+    # frees the timer or the animation copy.
+    if fname == "lv_timer_create":
+        post_lv_call = "    lvpy_timer_bind(_res);"
+    elif fname == "lv_timer_set_cb":
+        post_lv_call = "    lvpy_timer_bind(timer);"
+    elif fname == "lv_anim_start":
+        post_lv_call = "    lvpy_anim_bind(_res);"
+    elif fname.endswith("_remove_event_cb_with_user_data"):
         post_lv_call = "    if (_res > 0) lvpy_release_callback_user_data(user_data);"
     elif fname == "lv_obj_remove_event_cb":
         pre_lv_call = (
