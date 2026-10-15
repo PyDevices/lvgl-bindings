@@ -278,6 +278,16 @@ static struct PyModuleDef lvgl_module_def = {
     print("    if (m == NULL) {")
     print("        return NULL;")
     print("    }")
+    # Free-threaded builds re-enable the GIL on import unless the module
+    # says it doesn't need it. LVGL itself isn't thread-safe; the rule that
+    # makes this safe is one thread for every LVGL call and every LVGL
+    # object's release, which lvgl-python documents.
+    print("#ifdef Py_GIL_DISABLED")
+    print("    if (PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED) < 0) {")
+    print("        Py_DECREF(m);")
+    print("        return NULL;")
+    print("    }")
+    print("#endif")
 
     if registration.int_constants or registration.generated_globals:
         for int_constant in registration.int_constants:
