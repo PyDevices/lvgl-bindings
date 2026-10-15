@@ -751,9 +751,10 @@ def gen_callback_func_cpython(func, func_name=None, user_data_argument=False):
             "    lvpy_release_lock_for_python();\n"
             "    lvpy_nesting_inc();\n"
             "    PyObject *result = PyObject_CallObject(py_cb, py_args);\n"
+            "    Py_DECREF(py_args);\n"
+            "    Py_DECREF(py_cb);\n"
             "    lvpy_nesting_dec();\n"
             "    lvpy_reacquire_lock_after_python();\n"
-            "    Py_DECREF(py_args);\n"
             "    if (result) Py_DECREF(result);\n"
             "    else PyErr_Clear();\n"
             "    PyGILState_Release(gstate);"
@@ -763,9 +764,10 @@ def gen_callback_func_cpython(func, func_name=None, user_data_argument=False):
             "    lvpy_release_lock_for_python();\n"
             "    lvpy_nesting_inc();\n"
             "    PyObject *result = PyObject_CallObject(py_cb, py_args);\n"
+            "    Py_DECREF(py_args);\n"
+            "    Py_DECREF(py_cb);\n"
             "    lvpy_nesting_dec();\n"
             "    lvpy_reacquire_lock_after_python();\n"
-            "    Py_DECREF(py_args);\n"
             "    if (!result) { PyErr_Clear(); PyGILState_Release(gstate); return%s; }\n"
             "    %s _c_res = %s(result);\n"
             "    Py_DECREF(result);\n"
@@ -787,9 +789,13 @@ static {return_type} {safe_name}_callback({func_args})
     if (!callbacks) {{ PyGILState_Release(gstate); return{void_default}; }}
     PyObject *py_cb = PyDict_GetItemString(callbacks, "{func_name}");
     if (!py_cb || !PyCallable_Check(py_cb)) {{ PyGILState_Release(gstate); return{void_default}; }}
+    /* Hold the callback for the whole call: it may replace or remove its
+     * own registration while it runs. */
+    Py_INCREF(py_cb);
     {build_args}
-    PyObject *py_args = PyTuple_Pack({num_args}, {tuple_args});
-    if (!py_args) {{ PyGILState_Release(gstate); return{void_default}; }}
+    PyObject *py_args = ({args_ok}) ? PyTuple_Pack({num_args}{tuple_args}) : NULL;
+    {release_args}
+    if (!py_args) {{ PyErr_Clear(); Py_DECREF(py_cb); PyGILState_Release(gstate); return{void_default}; }}
 {tail}
 }}
 """.format(
@@ -801,7 +807,11 @@ static {return_type} {safe_name}_callback({func_args})
             user_data=full_user_data,
             build_args="\n    ".join(build_arg_lines),
             num_args=len(args),
-            tuple_args=", ".join(tuple_items) if tuple_items else "",
+            tuple_args="".join(", " + item for item in tuple_items),
+            args_ok=" && ".join(tuple_items) if tuple_items else "1",
+            release_args="\n    ".join(
+                "Py_XDECREF(%s);" % item for item in tuple_items
+            ),
             tail=tail,
             void_default=void_default,
         )
