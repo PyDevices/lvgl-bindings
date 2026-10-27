@@ -1,21 +1,20 @@
-# Loading fonts at runtime
+# Fonts
 
 How to use fonts that are **not** compiled into your build, with
-[`fonts/*.bin`](../fonts/) and [`python/fs_driver.py`](../python/fs_driver.py).
-Works identically on all three consumers (lvgl-micropython,
-lvgl-circuitpython, lvgl-python).
+[`fonts/*.bin`](https://github.com/PyDevices/lvgl-bindings/tree/main/fonts) and [`python/fs_driver.py`](https://github.com/PyDevices/lvgl-bindings/blob/main/python/fs_driver.py).
+Works identically on lvgl-micropython, lvgl-circuitpython and lvgl-python.
 
 ## Why runtime fonts
 
 Space-constrained builds enable only a few `LV_FONT_MONTSERRAT_*` entries in
-`lv_conf.h`. Every other built-in font is available in this repo's
-[`fonts/`](../fonts/) directory in LVGL's binary font format — same glyph
+`lv_conf.h`. Every other built-in font is available in the lvgl-bindings
+[`fonts/`](https://github.com/PyDevices/lvgl-bindings/tree/main/fonts) directory in LVGL's binary font format — same glyph
 ranges, same merged FontAwesome symbols (`lv.SYMBOL.*`), same bpp as its
 compiled-in counterpart. Copy a `.bin` to the board and load it; no firmware
 rebuild, no `lv_conf.h` change, no binding regeneration.
 
 The trade-off: a compiled-in font lives in flash and costs no RAM, while a
-loaded font is parsed into the heap (roughly its file size — see the sizes in
+loaded font is parsed into the heap (roughly its file size: see the sizes in
 `fonts/`; Montserrat runs ~7–97 KB by size, the CJK fonts ~160–195 KB). Keep
 your everyday fonts compiled in; load the occasional large size, or a script
 you only sometimes need, at runtime.
@@ -29,7 +28,7 @@ mpremote cp montserrat_20.bin :
 
 On desktop (lvgl-python), just keep the `.bin` next to your script.
 
-## Loading with fs_driver (recommended)
+## Loading with fs_driver
 
 `fs_driver.py` registers a Python-backed LVGL filesystem driver: LVGL's
 file API (`lv_fs`) calls back into Python's `open()`/`read()`/`seek()`, so it
@@ -66,7 +65,7 @@ image sources like `lv.image.set_src("S:logo.png")` work through it too.
 
 ### Where fs_driver comes from
 
-The canonical copy is `python/fs_driver.py` in this repo. Each consumer
+The canonical copy is `python/fs_driver.py` in lvgl-bindings. Each package
 ships a synced copy: frozen into
 lvgl-micropython and lvgl-circuitpython builds, `py_modules` in the
 lvgl-python wheel — so `import fs_driver` just works. For a stock MicroPython
@@ -103,9 +102,9 @@ npx lv_font_conv --font MyFont.ttf --size 20 --bpp 4 \
 
 Keep `--no-compress` unless your build enables `LV_USE_FONT_COMPRESSED`.
 
-## Regenerating fonts/
+## Regenerating the fonts
 
-[`scripts/generate_font_bins.py`](../scripts/generate_font_bins.py) rebuilds
+[`scripts/generate_font_bins.py`](https://github.com/PyDevices/lvgl-bindings/blob/main/scripts/generate_font_bins.py) rebuilds
 every `.bin` by replaying the recipes from the LVGL submodule's own
 `lvgl/scripts/built_in_font/generate_all.py`, so ranges and symbol sets track
 the pinned LVGL version. Rerun it after bumping the `lvgl` pin:
@@ -116,9 +115,9 @@ the pinned LVGL version. Rerun it after bumping the `lvgl` pin:
 ```
 
 It needs `lv_font_conv` on PATH, or node/npx to fetch it. The subpixel and
-compressed Montserrat variants are intentionally skipped — `LV_USE_FONT_SUBPX`
-and `LV_USE_FONT_COMPRESSED` are off in our `lv_conf.h`, so the loader could
-not render them.
+compressed Montserrat variants are skipped: the bindings' `lv_conf.h` has
+`LV_USE_FONT_COMPRESSED` off and builds without subpixel fonts, so the loader
+could not render them.
 
 ## Font licenses
 
