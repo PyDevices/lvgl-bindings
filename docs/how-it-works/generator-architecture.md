@@ -18,13 +18,13 @@ LVGL headers + lv_conf.h
 - `requirements.txt` pins `pycparser==3.0`; `fake_libc_include/` is vendored
   from the matching parser release. Parser or fake-libc changes require full
   regeneration and all-target validation.
-- `binding/ir.py` is the target-neutral declaration representation.
-- `binding/api_model.py` defines the public Python model. The generated,
-  schema-versioned `generated/api.json` includes a deterministic content hash.
-- `binding/api_policy.json` is the reviewed exception manifest. Unsupported
+- [`binding/ir.py`](../../binding/ir.py) is the target-neutral declaration representation.
+- [`binding/api_model.py`](../../binding/api_model.py) defines the public Python model. The generated,
+  schema-versioned [`generated/api.json`](../../generated/api.json) includes a deterministic content hash.
+- [`binding/api_policy.json`](../../binding/api_policy.json) is the reviewed exception manifest. Unsupported
   public declarations are fatal unless an exact policy entry records the
   declaration, affected targets, reason, and test coverage.
-- `binding/emit_pyi_canonical.py` emits `generated/lvgl.pyi` only from
+- [`binding/emit_pyi_canonical.py`](../../binding/emit_pyi_canonical.py) emits [`generated/lvgl.pyi`](../../generated/lvgl.pyi) only from
   `generated/api.json`.
 
 Generated C is never edited by hand. The committed outputs are
@@ -95,8 +95,8 @@ coordinator, in PyDevices/pydevices `lib/` — reads
 calls from inside an LVGL callback. From inside this translation unit the
 counter looks unused (nothing here reads it back), but its only reader is
 Python code outside the generated C; do not remove it on that "dead code"
-appearance. `tests/test_nesting_export.py` guards this by reading the names
+appearance. [`tests/test_nesting_export.py`](../../tests/test_nesting_export.py) guards this by reading the names
 the freshly generated MicroPython/CircuitPython C exports; pydevices'
 `tests/test_lvgl_display_driver.py` holds the reader's side.
 
-How to run the generator and its checks is in [CONTRIBUTING](https://github.com/PyDevices/lvgl-bindings/blob/main/CONTRIBUTING.md). The consumer builds are part of integration validation: the `linux-integration.yml` workflow builds the MicroPython and CircuitPython unix ports with lvgl-micropython and lvgl-circuitpython pinned at the commit under test, and runs `tools/test_lvgl_smoke.py` on each. CPython rebuilds its extension and wheel from the synced source.
+How to run the generator and its checks is in [CONTRIBUTING](https://github.com/PyDevices/lvgl-bindings/blob/main/CONTRIBUTING.md). The consumer builds are part of integration validation: the `linux-integration.yml` workflow builds the MicroPython and CircuitPython unix ports with lvgl-micropython and lvgl-circuitpython pinned at the commit under test, and runs [`tools/test_lvgl_smoke.py`](../../tools/test_lvgl_smoke.py) on each. CPython rebuilds its extension and wheel from the synced source.

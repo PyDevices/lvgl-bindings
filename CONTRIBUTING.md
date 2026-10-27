@@ -54,7 +54,7 @@ consumer repositories don't need this clone beside them: each one's
 Make a small change in `binding/` or the LVGL submodule, regenerate the target
 you need, sync the generated files into the consumer repository, then rebuild
 that repository's firmware or extension. For a change to the Python helpers
-only, start with `python/fs_driver.py` and the consumer sync script. If you
+only, start with [`python/fs_driver.py`](python/fs_driver.py) and the consumer sync script. If you
 changed the C API surface or the LVGL headers, regenerate and rebuild a
 consumer before trusting the result.
 
@@ -93,11 +93,11 @@ The unified command preprocesses LVGL once and writes the selected target's C
 source, the target-neutral `api.json`, the shared `lvgl.pp`, the CircuitPython
 generated header and the shared `lvgl.pyi`. The API model is hashed and
 includes visibility and target availability; deliberate exceptions live in
-`binding/api_policy.json`. Preprocessing removes compiler line markers, so the
+[`binding/api_policy.json`](binding/api_policy.json). Preprocessing removes compiler line markers, so the
 inputs are reproducible across checkout paths. `--check` generates into a
 temporary directory and never changes the working tree.
 
-The stub comes only from the canonical `generated/api.json`. Use `--pyi-only`
+The stub comes only from the canonical [`generated/api.json`](generated/api.json). Use `--pyi-only`
 when you change typing emission, so the C bindings, the model and the
 preprocessed input aren't regenerated. The public names are the one
 upstream-compatible profile; there is no alternate naming mode.
@@ -115,7 +115,7 @@ TMPDIR=/tmp/lvgl-bindings-pytest .venv/bin/python -m pytest -q -s tests
 ./scripts/release_dry_run.sh           # the complete non-mutating release gate
 ```
 
-`scratch/upstream_baseline/run.sh` verifies that the pinned upstream generator
+[`scratch/upstream_baseline/run.sh`](scratch/upstream_baseline/run.sh) verifies that the pinned upstream generator
 still reproduces the baseline, without keeping its source or full outputs in
 this repository. All of its output is created in a temporary directory and
 removed on exit. Set `LVGL_BINDINGS_UPSTREAM_REPO` to reuse a checkout at the
@@ -123,16 +123,16 @@ pinned commit instead of cloning one.
 
 `linux-integration.yml` builds the MicroPython and CircuitPython unix ports
 with lvgl-micropython and lvgl-circuitpython pinned at the commit under test,
-and runs `tools/test_lvgl_smoke.py` on each. CPython rebuilds its extension and
+and runs [`tools/test_lvgl_smoke.py`](tools/test_lvgl_smoke.py) on each. CPython rebuilds its extension and
 wheel from the synced source.
 
 ## The consumers
 
 | Repository | What it takes from here |
 |---|---|
-| [lvgl-micropython](https://github.com/PyDevices/lvgl-micropython) | `generated/lvgl_micropython.c`, `lvgl/`, `lv_conf.h`, `python/fs_driver.py` into `lib/` |
-| [lvgl-circuitpython](https://github.com/PyDevices/lvgl-circuitpython) | `generated/lvgl_circuitpython.c` and `.h`, `lvgl/`, `lv_conf.h`, `python/fs_driver.py` into `lib/` |
-| [lvgl-python](https://github.com/PyDevices/lvgl-python) | `generated/lvgl_python.c`, `generated/lvgl.pyi`, `lvgl/`, `lv_conf.h` and the helpers; the one that publishes the wheel |
+| [lvgl-micropython](https://github.com/PyDevices/lvgl-micropython) | [`generated/lvgl_micropython.c`](generated/lvgl_micropython.c), `lvgl/`, `lv_conf.h`, `python/fs_driver.py` into `lib/` |
+| [lvgl-circuitpython](https://github.com/PyDevices/lvgl-circuitpython) | [`generated/lvgl_circuitpython.c`](generated/lvgl_circuitpython.c) and `.h`, `lvgl/`, `lv_conf.h`, `python/fs_driver.py` into `lib/` |
+| [lvgl-python](https://github.com/PyDevices/lvgl-python) | [`generated/lvgl_python.c`](generated/lvgl_python.c), [`generated/lvgl.pyi`](generated/lvgl.pyi), `lvgl/`, `lv_conf.h` and the helpers; the one that publishes the wheel |
 
 Each consumer records the resolved source SHA in `LVGL_BINDINGS_COMMIT`. Its
 sync script rejects branch names, so a downstream build can't silently move to

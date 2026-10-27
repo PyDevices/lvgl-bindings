@@ -6,7 +6,7 @@ the reference for what each widget, style and function does. This page says
 how the C names map to Python, and what the binding leaves out.
 
 The exact names your build has are in the type stub, `lvgl.pyi`. Wheels install
-it beside the `lvgl` extension module, and `generated/lvgl.pyi` in
+it beside the `lvgl` extension module, and [`generated/lvgl.pyi`](../../generated/lvgl.pyi) in
 [lvgl-bindings](https://github.com/PyDevices/lvgl-bindings/blob/main/generated/lvgl.pyi)
 is the shared copy. If your checker doesn't pick it up, set
 `python.analysis.stubPath` (Pylance) or `stubPath` (pyright) to a directory

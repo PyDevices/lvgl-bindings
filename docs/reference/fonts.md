@@ -65,7 +65,7 @@ image sources like `lv.image.set_src("S:logo.png")` work through it too.
 
 ### Where fs_driver comes from
 
-The canonical copy is `python/fs_driver.py` in lvgl-bindings. Each package
+The canonical copy is [`python/fs_driver.py`](../../python/fs_driver.py) in lvgl-bindings. Each package
 ships a synced copy: frozen into
 lvgl-micropython and lvgl-circuitpython builds, `py_modules` in the
 lvgl-python wheel — so `import fs_driver` just works. For a stock MicroPython
