@@ -20,6 +20,7 @@
 #include "py/obj.h"
 #include "py/objint.h"
 #include "py/objstr.h"
+#include "py/objtuple.h"
 #include "py/runtime.h"
 #include "py/binary.h"
 #include "py/objarray.h"
@@ -1027,12 +1028,25 @@ static mp_obj_t lv_struct_array_unary_op(mp_unary_op_t op, mp_obj_t self_in)
     }
 }
 
+// Iterates views of the elements, the same objects indexing returns.
+static mp_obj_t lv_struct_array_getiter(mp_obj_t self_in, mp_obj_iter_buf_t *iter_buf)
+{
+    mp_lv_struct_array_t *self = MP_OBJ_TO_PTR(self_in);
+    mp_obj_t items = mp_obj_new_tuple(self->len, NULL);
+    mp_obj_tuple_t *t = MP_OBJ_TO_PTR(items);
+    for (size_t i = 0; i < self->len; i++) {
+        t->items[i] = self->read(self->data + i * self->elem_size);
+    }
+    return mp_getiter(items, iter_buf);
+}
+
 static MP_DEFINE_CONST_OBJ_TYPE(
     mp_lv_struct_array_type,
     MP_QSTR_StructArray,
-    MP_TYPE_FLAG_NONE,
+    MP_TYPE_FLAG_ITER_IS_GETITER,
     unary_op, lv_struct_array_unary_op,
-    subscr, lv_struct_array_subscr
+    subscr, lv_struct_array_subscr,
+    iter, lv_struct_array_getiter
 );
 
 GENMPY_UNUSED static mp_obj_t mp_lv_struct_array_new(mp_obj_t owner, void *data,
