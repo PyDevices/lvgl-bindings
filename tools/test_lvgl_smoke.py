@@ -488,6 +488,64 @@ def test_struct_fields_and_arrays(lv):
     print("OK: struct fields, struct methods, and typed array conversion")
 
 
+def _line_size(lv, line):
+    line.invalidate()
+    lv.screen_active().update_layout()
+    return line.get_width(), line.get_height()
+
+
+def test_line_points_list_and_buffer(lv):
+    # The same set_points call takes a list of points (structs or dicts) and a
+    # packed buffer on every interpreter (lvgl-bindings#37).
+    import struct
+
+    point_type = _lv_export(lv, "point_precise_t")
+    probe = point_type()
+    probe.x = 1.5
+    fmt = "<ff" if probe.x == 1.5 else "<ii"
+    xy = [(0, 0), (40, 20), (80, 0)]
+    as_dicts = [{"x": x, "y": y} for x, y in xy]
+    as_structs = []
+    for x, y in xy:
+        p = point_type()
+        p.x, p.y = x, y
+        as_structs.append(p)
+    as_buf = bytearray()
+    for x, y in xy:
+        as_buf += struct.pack(fmt, x, y)
+
+    scr = lv.screen_active()
+    sizes = {}
+    for name, pts in (
+        ("list of dicts", as_dicts),
+        ("list of structs", as_structs),
+        ("tuple of dicts", tuple(as_dicts)),
+        ("packed buffer", as_buf),
+    ):
+        line = _widget_type(lv, "line")(scr)
+        try:
+            line.set_points(pts, len(xy))
+        except Exception as exc:
+            _fail("line.set_points rejected a %s: %s: %s" % (name, type(exc).__name__, exc))
+        # The converted array must outlive the list it came from: LVGL keeps
+        # the pointer.
+        pts = None
+        gc.collect()
+        sizes[name] = _line_size(lv, line)
+        line.delete()
+    if len(set(sizes.values())) != 1 or sizes["list of dicts"][0] < 80:
+        _fail("line.set_points forms disagree: %r" % (sizes,))
+    line = _widget_type(lv, "line")(scr)
+    try:
+        line.set_points([{"x": 1}, 5], 2)
+    except (TypeError, SyntaxError):
+        pass
+    else:
+        _fail("line.set_points accepted a list holding an int")
+    line.delete()
+    print("OK: line.set_points takes a list of points or a packed buffer")
+
+
 def test_struct_value_from_dict(lv):
     # A struct-by-value field takes a dict, as its type's constructor does, and
     # a wrong type raises instead of crashing CPython (lvgl-bindings#21).
@@ -583,6 +641,7 @@ def main():
             test_pointer_buffer_dereference(lv, disp)
         test_widget(lv)
         test_struct_fields_and_arrays(lv)
+        test_line_points_list_and_buffer(lv)
         test_struct_value_from_dict(lv)
         test_event_callback(lv)
         test_callback_gc_with_widget_ref(lv)

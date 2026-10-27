@@ -225,6 +225,70 @@ static void *lvpy_str_arr_arg(PyObject *self, PyObject *arg, const char *key)
     if (rc != 0) return NULL;
     return (void *)arr;
 }
+
+/*
+ * Struct-array arguments (const lv_point_precise_t points[] and friends).
+ *
+ * A list or tuple of structs (or dicts, as for a struct argument) converts to
+ * a C array, the way MicroPython converts it; anything else goes through
+ * mp_to_ptr, so a packed buffer still works. LVGL may keep the pointer
+ * (lv_line_set_points does), so the array or buffer is retained under a
+ * per-function key: on the widget's callback dict when self is a widget,
+ * else in a module dict keyed by self's address. A repeat call for the same
+ * function releases the previous one.
+ */
+
+typedef void *(*lvpy_struct_writer_t)(PyObject *);
+
+static PyObject *lvpy_struct_arr_keep;
+
+static int lvpy_struct_arr_retain(PyObject *self, const char *key, PyObject *keep)
+{
+#ifdef LV_OBJ_T
+    if (self && PyObject_TypeCheck(self, &py_lv_obj_type)) {
+        PyObject *callbacks = mp_get_callbacks(self);
+        return callbacks ? PyDict_SetItemString(callbacks, key, keep) : -1;
+    }
+#endif
+    if (!lvpy_struct_arr_keep && !(lvpy_struct_arr_keep = PyDict_New())) return -1;
+    PyObject *k = PyUnicode_FromFormat("%p:%s", (void *)self, key);
+    if (!k) return -1;
+    int rc = PyDict_SetItem(lvpy_struct_arr_keep, k, keep);
+    Py_DECREF(k);
+    return rc;
+}
+
+static void *lvpy_struct_arr_arg(PyObject *self, PyObject *arg, const char *key,
+                                 size_t elem_size, lvpy_struct_writer_t write)
+{
+    if (!arg || arg == Py_None) return NULL;
+    void *arr;
+    PyObject *keep;
+    if (PyList_Check(arg) || PyTuple_Check(arg)) {
+        PyObject *items = PySequence_Tuple(arg);
+        if (!items) return NULL;
+        Py_ssize_t n = PyTuple_GET_SIZE(items);
+        arr = PyMem_Malloc(n ? (size_t)n * elem_size : 1);
+        if (!arr) { Py_DECREF(items); PyErr_NoMemory(); return NULL; }
+        for (Py_ssize_t i = 0; i < n; i++) {
+            void *p = write(PyTuple_GET_ITEM(items, i));
+            if (PyErr_Occurred()) { PyMem_Free(arr); Py_DECREF(items); return NULL; }
+            memcpy((char *)arr + (size_t)i * elem_size, p, elem_size);
+        }
+        Py_DECREF(items);
+        keep = PyCapsule_New(arr, NULL, lvpy_str_arr_capsule_free);
+        if (!keep) { PyMem_Free(arr); return NULL; }
+    } else {
+        arr = mp_to_ptr(arg);
+        if (PyErr_Occurred()) return NULL;
+        Py_INCREF(arg);
+        keep = arg;
+    }
+    int rc = lvpy_struct_arr_retain(self, key, keep);
+    Py_DECREF(keep);
+    if (rc != 0) return NULL;
+    return arr;
+}
 """
     )
 
