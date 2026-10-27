@@ -29,7 +29,7 @@ prints a note naming the commit and carries on. There is nothing to generate.
 
 Install CircuitPython's build tools and cross-compilers before building. This
 repository doesn't do it for you: follow CircuitPython's
-[building.md](https://github.com/adafruit/circuitpython/blob/main/building.md)
+[BUILDING.md](https://github.com/adafruit/circuitpython/blob/main/BUILDING.md)
 and Adafruit's
 [Building CircuitPython](https://learn.adafruit.com/building-circuitpython/linux)
 guide. For an Arm board you need `gcc-arm-none-eabi`; check

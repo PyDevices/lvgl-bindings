@@ -29,7 +29,7 @@ lvgl-bindings: generator, API model, generated C and lvgl.pyi
 lvgl-bindings is the only place the generated bindings, `lv_conf.h` and the
 `python/` helpers are edited. The other three hold synced copies, each pinned to
 one exact bindings commit recorded in its `LVGL_BINDINGS_COMMIT` file, and a
-sync overwrites any edit made there. Nothing moves to a new bindings commit
+sync overwrites any edit made there. Nothing moves to another bindings commit
 until that repository's own sync is run against a specific commit or release
 tag.
 

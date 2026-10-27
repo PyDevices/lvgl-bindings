@@ -49,6 +49,19 @@ import micropip
 await micropip.install("pydevices-lvgl", index_urls="https://test.pypi.org/simple/")
 ```
 
+On Windows Python from WSL, use `pip.exe` and `python.exe` the same way:
+
+```bash
+pip.exe install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pydevices-lvgl
+python.exe -c "import lvgl as lv; lv.init(); lv.deinit(); print('ok')"
+```
+
+An older `pydevices-lvgl` wheel carried `display_driver.py`, which ships in
+`pydevices`. Upgrade both in one command, `pip install -U pydevices pydevices-lvgl`.
+Upgraded on its own after a `pydevices` that already has the file, pip's
+uninstall of the old `pydevices-lvgl` deletes the `display_driver.py` both
+wheels wrote; `pip install --force-reinstall --no-deps pydevices` puts it back.
+
 No wheel for your platform? [Build it from source](../guides/build-lvgl-python-from-source.md).
 
 ## MicroPython-compatible firmware, with lvgl-micropython
