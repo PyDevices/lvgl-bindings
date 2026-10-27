@@ -257,3 +257,46 @@ def test_api_model_detects_duplicate_exports():
         "duplicate export module.dup" in error
         for error in duplicate.validation_errors()
     )
+
+
+def test_struct_method_names_match_the_runtime_binding():
+    # The runtimes name a struct method after the part of the function name it
+    # doesn't share with the struct's C name (analyze.noncommon_part), so
+    # lv_grad_linear_init on lv_grad_dsc_t is linear_init, not grad_linear_init.
+    declarations = parse_source(
+        "typedef struct _lv_obj_t lv_obj_t; "
+        "typedef struct { int dir; } lv_grad_dsc_t; "
+        "void lv_grad_linear_init(lv_grad_dsc_t *dsc, int from_x); "
+        "void lv_grad_init_stops(lv_grad_dsc_t *grad, int num_stops);",
+        filename="api.h",
+    )
+
+    model = build_api_model(declarations, module_prefix="lv", base_obj_type="lv_obj_t")
+
+    functions = {function.c_name: function for function in model.functions}
+    assert functions["lv_grad_linear_init"].role == "struct_method"
+    assert functions["lv_grad_linear_init"].python_name == "linear_init"
+    assert functions["lv_grad_init_stops"].python_name == "init_stops"
+
+
+def test_generated_struct_method_names_match_the_runtime_binding():
+    import json
+    from pathlib import Path
+
+    from binding.analyze import noncommon_part
+
+    api = json.loads((Path(__file__).resolve().parents[1] / "generated" / "api.json").read_text())
+    checked = 0
+    wrong = []
+    for function in api["functions"]:
+        if function["role"] != "struct_method":
+            continue
+        target = function["parameters"][0]["type"].get("target", {})
+        if target.get("kind") != "identifier":
+            continue
+        want = noncommon_part(function["c_name"], target["name"])
+        checked += 1
+        if function["python_name"] != want:
+            wrong.append((function["c_name"], function["python_name"], want))
+    assert checked > 50
+    assert wrong == []
