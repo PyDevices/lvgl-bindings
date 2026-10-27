@@ -1778,6 +1778,11 @@ static inline const mp_obj_type_t *get_mp_{sanitized_struct_name}_type(void)
 
 GENMPY_UNUSED static {struct_tag}{type} *{arr_to_c_convertor_name}(mp_obj_t mp_arr)
 {{
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);

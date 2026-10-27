@@ -6443,6 +6443,11 @@ static inline const mp_obj_type_t *get_mp_lv_grad_stop_t_type(void)
 
 GENMPY_UNUSED static lv_grad_stop_t *mp_arr_to_lv_grad_stop_t___2__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -10182,6 +10187,11 @@ static MP_DEFINE_CONST_LV_FUN_OBJ_VAR(mp_lv_obj_set_flex_grow_mpobj, 2, mp_lv_ob
 
 GENMPY_UNUSED static int32_t *mp_arr_to_int32_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -10406,6 +10416,11 @@ static void lv_display_t_flush_wait_cb_callback(lv_display_t *disp);
 
 GENMPY_UNUSED static lv_area_t *mp_arr_to_lv_area_t___32__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -10436,6 +10451,11 @@ GENMPY_UNUSED static mp_obj_t mp_arr_from_lv_area_t___32__(lv_area_t *arr)
 
 GENMPY_UNUSED static uint8_t *mp_arr_to_uint8_t___32__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -12516,6 +12536,11 @@ static MP_DEFINE_CONST_LV_FUN_OBJ_VAR(mp_lv_obj_transform_point_mpobj, 3, mp_lv_
 
 GENMPY_UNUSED static lv_point_t *mp_arr_to_lv_point_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -20038,6 +20063,11 @@ GENMPY_UNUSED static const mp_lv_obj_type_t mp_lv_image_type = {
 
 GENMPY_UNUSED static void * *mp_arr_to_void_ptr____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -21336,6 +21366,11 @@ GENMPY_UNUSED static const mp_lv_obj_type_t mp_lv_button_type = {
 
 GENMPY_UNUSED static char * *mp_arr_to_char_ptr____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -21380,6 +21415,11 @@ static MP_DEFINE_CONST_LV_FUN_OBJ_VAR(mp_lv_buttonmatrix_set_map_mpobj, 2, mp_lv
 
 GENMPY_UNUSED static lv_buttonmatrix_ctrl_t *mp_arr_to_lv_buttonmatrix_ctrl_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -21719,6 +21759,11 @@ static inline const mp_obj_type_t *get_mp_lv_calendar_date_t_type(void)
 
 GENMPY_UNUSED static lv_calendar_date_t *mp_arr_to_lv_calendar_date_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -23997,6 +24042,11 @@ GENMPY_UNUSED static const mp_lv_obj_type_t mp_lv_led_type = {
 
 GENMPY_UNUSED static lv_point_precise_t *mp_arr_to_lv_point_precise_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -29716,6 +29766,11 @@ static inline const mp_obj_type_t *get_mp_lv_layout_callbacks_t_type(void)
 
 GENMPY_UNUSED static char *mp_arr_to_char___64__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -30382,6 +30437,11 @@ static inline const mp_obj_type_t *get_mp_lv_draw_glyph_dsc_t_type(void)
 
 GENMPY_UNUSED static lv_point_precise_t *mp_arr_to_lv_point_precise_t___3__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -30500,6 +30560,11 @@ static inline const mp_obj_type_t *get_mp_lv_draw_triangle_dsc_t_type(void)
 
 GENMPY_UNUSED static lv_indev_gesture_type_t *mp_arr_to_lv_indev_gesture_type_t___LV_INDEV_GESTURE_CNT__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -30530,6 +30595,11 @@ GENMPY_UNUSED static mp_obj_t mp_arr_from_lv_indev_gesture_type_t___LV_INDEV_GES
 
 GENMPY_UNUSED static void * *mp_arr_to_void_ptr__LV_INDEV_GESTURE_CNT__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -30676,6 +30746,11 @@ typedef __typeof__( ((lv_indev_t*)(0))->pointer ) lv_indev_pointer_t;
 
 GENMPY_UNUSED static lv_point_t *mp_arr_to_lv_point_t___8__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -30706,6 +30781,11 @@ GENMPY_UNUSED static mp_obj_t mp_arr_from_lv_point_t___8__(lv_point_t *arr)
 
 GENMPY_UNUSED static uint32_t *mp_arr_to_uint32_t___8__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -31332,6 +31412,11 @@ static inline const mp_obj_type_t *get_mp_lv_indev_gesture_recognizer_t_type(voi
 
 GENMPY_UNUSED static lv_indev_gesture_recognizer_t *mp_arr_to_lv_indev_gesture_recognizer_t___LV_INDEV_GESTURE_CNT__(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -32928,6 +33013,11 @@ static inline const mp_obj_type_t *get_mp_lv_text_attributes_t_type(void)
 
 GENMPY_UNUSED static lv_area_t *mp_arr_to_lv_area_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -33236,6 +33326,11 @@ static MP_DEFINE_CONST_DICT(mp_lv_color_t_locals_dict, mp_lv_color_t_locals_dict
 
 GENMPY_UNUSED static lv_color_t *mp_arr_to_lv_color_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -33262,6 +33357,11 @@ GENMPY_UNUSED static mp_obj_t mp_arr_from_lv_color_t_____(const lv_color_t *arr)
 
 GENMPY_UNUSED static lv_opa_t *mp_arr_to_lv_opa_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -33288,6 +33388,11 @@ GENMPY_UNUSED static mp_obj_t mp_arr_from_lv_opa_t_____(const lv_opa_t *arr)
 
 GENMPY_UNUSED static uint8_t *mp_arr_to_uint8_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -35866,6 +35971,11 @@ static MP_DEFINE_CONST_DICT(mp_lv_anim_bezier3_para_t_locals_dict, mp_lv_anim_be
 
 GENMPY_UNUSED static lv_style_prop_t *mp_arr_to_lv_style_prop_t_____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);
@@ -40841,6 +40951,11 @@ static MP_DEFINE_CONST_LV_FUN_OBJ_VAR(mp_lv_subject_get_previous_color_mpobj, 1,
 
 GENMPY_UNUSED static lv_subject_t * *mp_arr_to_lv_subject_t_ptr____(mp_obj_t mp_arr)
 {
+    // A packed buffer is already the C array (lvgl-bindings#37).
+    if (MP_OBJ_IS_STR_OR_BYTES(mp_arr) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(mp_arr, &mp_type_memoryview))
+        return mp_to_ptr(mp_arr);
     mp_obj_t mp_len = mp_obj_len_maybe(mp_arr);
     if (mp_len == MP_OBJ_NULL) return mp_to_ptr(mp_arr);
     mp_int_t len = mp_obj_get_int(mp_len);

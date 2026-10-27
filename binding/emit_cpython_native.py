@@ -929,6 +929,27 @@ def _is_char_ptr_array_arg(arg):
     )
 
 
+def _const_struct_array_elem(arg, get_type_fn):
+    """Element struct name for a ``const T name[]`` parameter, else None.
+
+    Only const arrays qualify: LVGL reads them, so a list copied into a C
+    array means the same thing as the caller's buffer. A non-const array may
+    be written by LVGL (lv_obj_transform_point_array), and a copy would drop
+    those writes, so it keeps the buffer-only lowering.
+    """
+    t = getattr(arg, "type", None)
+    if not isinstance(t, c_ast.ArrayDecl) or not isinstance(t.type, c_ast.TypeDecl):
+        return None
+    if "const" not in (t.type.quals or []):
+        return None
+    elem = get_type_fn(t.type, remove_quals=True)
+    if not runtime.get("cpython_struct_sizes", {}).get(elem):
+        return None
+    if elem in (_h("structs_without_typedef") or {}):
+        return None
+    return elem
+
+
 def build_py_func_arg_line(arg, index, func, py_var):
     gen = _h("gen")
     get_type_fn = _h("get_type")
@@ -986,6 +1007,33 @@ def build_py_func_arg_line(arg, index, func, py_var):
         add_default_declname(fixed_arg, cname)
 
     arg_type = get_type_fn(arg.type, remove_quals=True)
+    elem = _const_struct_array_elem(arg, get_type_fn)
+    if elem is not None and conversion_available(
+        conversions=mp_to_lv,
+        type_name=arg_type,
+        generate_type=lambda: try_generate_type(arg.type),
+    ):
+        # const lv_point_precise_t points[] and friends: a list of structs
+        # (or dicts) becomes a C array, as on MicroPython; a buffer passes
+        # through. Either way it is retained on the widget, because LVGL
+        # keeps the pointer (lv_line_set_points never copies;
+        # lvgl-bindings#37).
+        arg_metadata = {"type": lv_mp_type[arg_type]}
+        if cname:
+            arg_metadata["name"] = cname
+        func_metadata[func.name]["args"].append(arg_metadata)
+        return (
+            '{var} = ({cast})lvpy_struct_arr_arg(self, {py_var}, "{key}", '
+            "sizeof({elem}), mp_write_value_ptr_{san});"
+        ).format(
+            var=gen.visit(fixed_arg),
+            cast=gen.visit(fixed_arg.type),
+            py_var=py_var,
+            key="%s:%s" % (func.name, cname or index),
+            elem=elem,
+            san=_h("sanitize")(elem),
+        )
+
     if not conversion_available(
         conversions=mp_to_lv,
         type_name=arg_type,
