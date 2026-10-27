@@ -289,6 +289,142 @@ static void *lvpy_struct_arr_arg(PyObject *self, PyObject *arg, const char *key,
     if (rc != 0) return NULL;
     return arr;
 }
+
+/*
+ * Fixed-size struct arrays inside a struct (lv_point_precise_t p[3]).
+ *
+ * Reading the field gives a view over the parent struct's memory, so
+ * d.p[1].x = 7 and d.p[1] = point write through, and len(d.p) works. The view
+ * holds the parent so the memory stays alive. Assigning the field takes a
+ * sequence of exactly that many structs (or dicts), or a packed buffer of the
+ * array's size; anything else raises and leaves the field unchanged
+ * (lvgl-bindings#38).
+ */
+
+typedef PyObject *(*lvpy_struct_reader_t)(void *);
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *owner;
+    char *data;
+    Py_ssize_t len;
+    size_t elem_size;
+    lvpy_struct_reader_t read;
+    lvpy_struct_writer_t write;
+} lvpy_struct_array_t;
+
+static void lvpy_struct_array_dealloc(PyObject *self)
+{
+    Py_XDECREF(((lvpy_struct_array_t *)self)->owner);
+    Py_TYPE(self)->tp_free(self);
+}
+
+static Py_ssize_t lvpy_struct_array_len(PyObject *self)
+{
+    return ((lvpy_struct_array_t *)self)->len;
+}
+
+static PyObject *lvpy_struct_array_item(PyObject *self_in, Py_ssize_t i)
+{
+    lvpy_struct_array_t *self = (lvpy_struct_array_t *)self_in;
+    if (i < 0 || i >= self->len) {
+        PyErr_SetString(PyExc_IndexError, "struct array index out of range");
+        return NULL;
+    }
+    return self->read(self->data + (size_t)i * self->elem_size);
+}
+
+static int lvpy_struct_array_ass_item(PyObject *self_in, Py_ssize_t i, PyObject *value)
+{
+    lvpy_struct_array_t *self = (lvpy_struct_array_t *)self_in;
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete struct array items");
+        return -1;
+    }
+    if (i < 0 || i >= self->len) {
+        PyErr_SetString(PyExc_IndexError, "struct array assignment index out of range");
+        return -1;
+    }
+    void *p = self->write(value);
+    if (PyErr_Occurred()) return -1;
+    memcpy(self->data + (size_t)i * self->elem_size, p, self->elem_size);
+    return 0;
+}
+
+static PySequenceMethods lvpy_struct_array_as_sequence = {
+    .sq_length = lvpy_struct_array_len,
+    .sq_item = lvpy_struct_array_item,
+    .sq_ass_item = lvpy_struct_array_ass_item,
+};
+
+static PyTypeObject lvpy_struct_array_type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "lvgl.StructArray",
+    .tp_basicsize = sizeof(lvpy_struct_array_t),
+    .tp_dealloc = lvpy_struct_array_dealloc,
+    .tp_as_sequence = &lvpy_struct_array_as_sequence,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+};
+
+static inline PyObject *lvpy_struct_array_new(PyObject *owner, void *data,
+    Py_ssize_t len, size_t elem_size, lvpy_struct_reader_t read, lvpy_struct_writer_t write)
+{
+    if (!(lvpy_struct_array_type.tp_flags & Py_TPFLAGS_READY) &&
+        PyType_Ready(&lvpy_struct_array_type) < 0)
+        return NULL;
+    lvpy_struct_array_t *self = PyObject_New(lvpy_struct_array_t, &lvpy_struct_array_type);
+    if (!self) return NULL;
+    Py_XINCREF(owner);
+    self->owner = owner;
+    self->data = (char *)data;
+    self->len = len;
+    self->elem_size = elem_size;
+    self->read = read;
+    self->write = write;
+    return (PyObject *)self;
+}
+
+/* Sets an exception and leaves data unchanged on any mismatch. */
+static inline void lvpy_struct_array_assign(void *data, Py_ssize_t len,
+    size_t elem_size, lvpy_struct_writer_t write, PyObject *value)
+{
+    size_t total = (size_t)len * elem_size;
+    if (PyBytes_Check(value) || PyByteArray_Check(value) || PyMemoryView_Check(value)) {
+        Py_buffer view;
+        if (PyObject_GetBuffer(value, &view, PyBUF_C_CONTIGUOUS) < 0) return;
+        if ((size_t)view.len != total)
+            PyErr_Format(PyExc_ValueError, "expected a buffer of %zu bytes, got %zd",
+                         total, view.len);
+        else
+            memcpy(data, view.buf, total);
+        PyBuffer_Release(&view);
+        return;
+    }
+    if (!PySequence_Check(value) || PyUnicode_Check(value)) {
+        PyErr_Format(PyExc_TypeError, "expected a sequence of %zd structs, got '%s'",
+                     len, Py_TYPE(value)->tp_name);
+        return;
+    }
+    PyObject *items = PySequence_Tuple(value);
+    if (!items) return;
+    if (PyTuple_GET_SIZE(items) != len) {
+        PyErr_Format(PyExc_ValueError, "expected %zd items, got %zd",
+                     len, PyTuple_GET_SIZE(items));
+        Py_DECREF(items);
+        return;
+    }
+    /* Convert every item before writing any, so a bad item changes nothing. */
+    char *tmp = (char *)PyMem_Malloc(total ? total : 1);
+    if (!tmp) { Py_DECREF(items); PyErr_NoMemory(); return; }
+    for (Py_ssize_t i = 0; i < len; i++) {
+        void *p = write(PyTuple_GET_ITEM(items, i));
+        if (PyErr_Occurred()) { PyMem_Free(tmp); Py_DECREF(items); return; }
+        memcpy(tmp + (size_t)i * elem_size, p, elem_size);
+    }
+    memcpy(data, tmp, total);
+    PyMem_Free(tmp);
+    Py_DECREF(items);
+}
 """
     )
 

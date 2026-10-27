@@ -362,7 +362,33 @@ def try_generate_struct_cpython(struct_name, struct):
             )
         else:
             is_writeable = (not hasattr(decl.type, "quals")) or "const" not in decl.type.quals
-            if isinstance(decl.type, c_ast.ArrayDecl):
+            elem = (
+                _struct_array_elem(decl, get_type_fn, lv_to_mp)
+                if isinstance(decl.type, c_ast.ArrayDecl)
+                else None
+            )
+            if elem:
+                # A view, not a raw Blob, and a checked whole-array write
+                # instead of a memcpy from whatever mp_to_ptr returned
+                # (lvgl-bindings#38).
+                shape = "data->{decl_name}, {dim}, sizeof({ctype})".format(
+                    decl_name=decl.name,
+                    dim=gen.visit(decl.type.dim),
+                    ctype=gen.visit(decl.type.type),
+                )
+                san = sanitize(elem)
+                if is_writeable:
+                    write_cases.append(
+                        'if (strcmp(attr, "{field}") == 0) {{ lvpy_struct_array_assign({shape}, mp_write_value_ptr_{san}, value); result = 0; }}'.format(
+                            field=sanitize(decl.name), shape=shape, san=san
+                        )
+                    )
+                read_cases.append(
+                    'if (strcmp(attr, "{field}") == 0) return lvpy_struct_array_new(self, {shape}, mp_read_ptr_{san}, mp_write_value_ptr_{san});'.format(
+                        field=sanitize(decl.name), shape=shape, san=san
+                    )
+                )
+            elif isinstance(decl.type, c_ast.ArrayDecl):
                 memcpy_size = "sizeof(%s)*%s" % (
                     gen.visit(decl.type.type),
                     gen.visit(decl.type.dim),
@@ -927,6 +953,25 @@ def _is_char_ptr_array_arg(arg):
         and isinstance(inner.type, c_ast.IdentifierType)
         and inner.type.names == ["char"]
     )
+
+
+def _struct_array_elem(decl, get_type_fn, lv_to_mp):
+    """Element struct name for a fixed-size struct array field, else None.
+
+    Only complete structs qualify: their mp_write_value_ptr_* writer and
+    mp_read_ptr_* reader exist.
+    """
+    elem_ast = decl.type.type
+    if not isinstance(elem_ast, c_ast.TypeDecl):
+        return None
+    elem = get_type_fn(elem_ast, remove_quals=True)
+    if not runtime.get("cpython_struct_sizes", {}).get(elem):
+        return None
+    if elem in (_h("structs_without_typedef") or {}):
+        return None
+    if not (lv_to_mp.get("%s *" % elem) or "").startswith("mp_read_ptr_"):
+        return None
+    return elem
 
 
 def _const_struct_array_elem(arg, get_type_fn):

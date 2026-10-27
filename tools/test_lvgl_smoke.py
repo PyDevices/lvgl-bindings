@@ -546,6 +546,56 @@ def test_line_points_list_and_buffer(lv):
     print("OK: line.set_points takes a list of points or a packed buffer")
 
 
+def test_struct_array_fields(lv):
+    # A fixed-size struct array inside a struct (lv_point_precise_t p[3]) reads
+    # as a view: index reads and writes go through to the struct, len() works,
+    # and a wrong-sized or wrong-typed assignment raises and changes nothing
+    # (lvgl-bindings#38).
+    point_type = _lv_export(lv, "point_precise_t")
+    d = _lv_export(lv, "draw_triangle_dsc_t")()
+    d.init()
+    if len(d.p) != 3:
+        _fail("len(draw_triangle_dsc_t.p) is %r, not 3" % (len(d.p),))
+    d.p[0].x = 5
+    d.p[1] = point_type({"x": 7, "y": 8})
+    d.p[2] = {"x": 9, "y": 10}
+    got = [(p.x, p.y) for p in d.p]
+    if got != [(5, 0), (7, 8), (9, 10)]:
+        _fail("struct array item writes were lost: %r" % (got,))
+    d.p = [{"x": 20, "y": 200}, point_type({"x": 180, "y": 20}), {"x": 340, "y": 200}]
+    want = [(20, 200), (180, 20), (340, 200)]
+    if [(p.x, p.y) for p in d.p] != want:
+        _fail("whole struct array assignment was lost")
+    for bad in ([{"x": 1, "y": 1}], [{"x": 1}, {"x": 2}, 5], 5, None):
+        try:
+            d.p = bad
+        except (TypeError, ValueError, SyntaxError):
+            pass
+        else:
+            _fail("struct array accepted %r" % (bad,))
+        if [(p.x, p.y) for p in d.p] != want:
+            _fail("a rejected struct array assignment changed the field: %r" % (bad,))
+    try:
+        d.p[3]
+    except IndexError:
+        pass
+    else:
+        _fail("struct array index 3 of 3 did not raise IndexError")
+    # The view keeps the struct it came from alive.
+    view = d.p
+    d = None
+    gc.collect()
+    if (view[2].x, view[2].y) != (340, 200):
+        _fail("struct array view lost its struct")
+
+    g = _lv_export(lv, "grad_dsc_t")()
+    g.stops[1].frac = 200
+    g.stops[0] = {"frac": 10, "opa": 255}
+    if (len(g.stops), g.stops[0].frac, g.stops[1].frac) != (2, 10, 200):
+        _fail("grad_dsc_t.stops writes were lost")
+    print("OK: struct array fields index, assign and check their length")
+
+
 def test_struct_value_from_dict(lv):
     # A struct-by-value field takes a dict, as its type's constructor does, and
     # a wrong type raises instead of crashing CPython (lvgl-bindings#21).
@@ -642,6 +692,7 @@ def main():
         test_widget(lv)
         test_struct_fields_and_arrays(lv)
         test_line_points_list_and_buffer(lv)
+        test_struct_array_fields(lv)
         test_struct_value_from_dict(lv)
         test_event_callback(lv)
         test_callback_gc_with_widget_ref(lv)

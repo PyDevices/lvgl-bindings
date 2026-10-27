@@ -1131,6 +1131,111 @@ static MP_DEFINE_CONST_OBJ_TYPE(
     locals_dict, &mp_base_struct_locals_dict
 );
 
+/*
+ * Fixed-size struct arrays inside a struct (lv_point_precise_t p[3]).
+ *
+ * Reading the field gives a view over the parent struct's memory, so
+ * d.p[1].x = 7 and d.p[1] = point write through, and len(d.p) works. The view
+ * holds the parent so the memory stays alive. Assigning the field takes a
+ * sequence of exactly that many structs (or dicts), or a packed buffer of the
+ * array's size; anything else raises and leaves the field unchanged
+ * (lvgl-bindings#38).
+ */
+
+typedef struct {
+    mp_obj_base_t base;
+    mp_obj_t owner;
+    char *data;
+    size_t len;
+    size_t elem_size;
+    mp_obj_t (*read)(void *elem);
+    void *(*write)(mp_obj_t value);
+} mp_lv_struct_array_t;
+
+static mp_obj_t lv_struct_array_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value)
+{
+    mp_lv_struct_array_t *self = MP_OBJ_TO_PTR(self_in);
+    if (value == MP_OBJ_NULL) {
+        mp_raise_TypeError(MP_ERROR_TEXT("can't delete struct array items"));
+    }
+    size_t i = mp_get_index(self->base.type, self->len, index, false);
+    char *elem = self->data + i * self->elem_size;
+    if (value == MP_OBJ_SENTINEL) {
+        return self->read(elem);
+    }
+    memcpy(elem, self->write(value), self->elem_size);
+    return mp_const_none;
+}
+
+static mp_obj_t lv_struct_array_unary_op(mp_unary_op_t op, mp_obj_t self_in)
+{
+    mp_lv_struct_array_t *self = MP_OBJ_TO_PTR(self_in);
+    switch (op) {
+        case MP_UNARY_OP_LEN: return MP_OBJ_NEW_SMALL_INT(self->len);
+        case MP_UNARY_OP_BOOL: return mp_obj_new_bool(self->len != 0);
+        default: return MP_OBJ_NULL;
+    }
+}
+
+static MP_DEFINE_CONST_OBJ_TYPE(
+    mp_lv_struct_array_type,
+    MP_QSTR_StructArray,
+    MP_TYPE_FLAG_NONE,
+    unary_op, lv_struct_array_unary_op,
+    subscr, lv_struct_array_subscr
+);
+
+GENMPY_UNUSED static mp_obj_t mp_lv_struct_array_new(mp_obj_t owner, void *data,
+    size_t len, size_t elem_size, mp_obj_t (*read)(void *), void *(*write)(mp_obj_t))
+{
+    mp_lv_struct_array_t *self = m_new_obj(mp_lv_struct_array_t);
+    self->base.type = &mp_lv_struct_array_type;
+    self->owner = owner;
+    self->data = (char *)data;
+    self->len = len;
+    self->elem_size = elem_size;
+    self->read = read;
+    self->write = write;
+    return MP_OBJ_FROM_PTR(self);
+}
+
+GENMPY_UNUSED static void mp_lv_struct_array_assign(void *data, size_t len,
+    size_t elem_size, void *(*write)(mp_obj_t), mp_obj_t value)
+{
+    if (MP_OBJ_IS_STR_OR_BYTES(value) ||
+        MP_OBJ_IS_TYPE(value, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(value, &mp_type_memoryview)) {
+        mp_buffer_info_t bufinfo;
+        mp_get_buffer_raise(value, &bufinfo, MP_BUFFER_READ);
+        if (bufinfo.len != len * elem_size) {
+            mp_raise_msg_varg(&mp_type_ValueError,
+                MP_ERROR_TEXT("expected a buffer of %d bytes, got %d"),
+                (int)(len * elem_size), (int)bufinfo.len);
+        }
+        memcpy(data, bufinfo.buf, bufinfo.len);
+        return;
+    }
+    mp_obj_t mp_len = mp_obj_len_maybe(value);
+    if (mp_len == MP_OBJ_NULL) {
+        mp_raise_msg_varg(&mp_type_TypeError,
+            MP_ERROR_TEXT("expected a sequence of %d structs, got '%s'"),
+            (int)len, mp_obj_get_type_str(value));
+    }
+    if ((size_t)mp_obj_get_int(mp_len) != len) {
+        mp_raise_msg_varg(&mp_type_ValueError,
+            MP_ERROR_TEXT("expected %d items, got %d"),
+            (int)len, (int)mp_obj_get_int(mp_len));
+    }
+    // Convert every item before writing any, so a bad item changes nothing.
+    char *tmp = m_new(char, len * elem_size);
+    for (size_t i = 0; i < len; i++) {
+        mp_obj_t item = mp_obj_subscr(value, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL);
+        memcpy(tmp + i * elem_size, write(item), elem_size);
+    }
+    memcpy(data, tmp, len * elem_size);
+    m_del(char, tmp, len * elem_size);
+}
+
 GENMPY_UNUSED static mp_obj_t mp_array_from_ptr(void *lv_arr, size_t element_size, bool is_signed)
 {
     mp_lv_array_t *self = m_new_obj(mp_lv_array_t);
@@ -1440,6 +1545,18 @@ MP_ARRAY_CONVERTOR(i64ptr, 8, true)
         return result
 
 
+    def _struct_array_elem_rw(decl):
+        """(reader, writer) by pointer for a struct-element array field, else None."""
+        elem_ast = decl.type.type
+        if not isinstance(elem_ast, c_ast.TypeDecl):
+            return None
+        ptr_type = "%s *" % get_type(elem_ast, remove_quals=True)
+        read = lv_to_mp.get(ptr_type) or ""
+        write = mp_to_lv.get(ptr_type) or ""
+        if read.startswith("mp_read_ptr_") and write.startswith("mp_write_ptr_"):
+            return read, write
+        return None
+
     def try_generate_struct(struct_name, struct):
         if struct_name in generated_structs:
             return None
@@ -1581,7 +1698,38 @@ MP_ARRAY_CONVERTOR(i64ptr, 8, true)
                     not hasattr(decl.type, "quals")
                 ) or "const" not in decl.type.quals
                 # Arrays must be handled by memcpy, otherwise we would get "assignment to expression with array type" error
-                if isinstance(decl.type, c_ast.ArrayDecl):
+                elem_rw = (
+                    _struct_array_elem_rw(decl)
+                    if isinstance(decl.type, c_ast.ArrayDecl)
+                    else None
+                )
+                if elem_rw:
+                    # A view, not a list of copies (lvgl-bindings#38).
+                    elem_read, elem_write = elem_rw
+                    shape = "data->{decl_name}, {dim}, sizeof({elem})".format(
+                        decl_name=decl.name,
+                        dim=gen.visit(decl.type.dim),
+                        elem=gen.visit(decl.type.type),
+                    )
+                    if is_writeable:
+                        write_cases.append(
+                            "case MP_QSTR_{field}: mp_lv_struct_array_assign({shape}, {write}, dest[1]); break; // converting to {type_name}".format(
+                                field=sanitize(decl.name),
+                                shape=shape,
+                                write=elem_write,
+                                type_name=type_name,
+                            )
+                        )
+                    read_cases.append(
+                        "case MP_QSTR_{field}: dest[0] = mp_lv_struct_array_new(self_in, {shape}, {read}, {write}); break; // converting from {type_name}".format(
+                            field=sanitize(decl.name),
+                            shape=shape,
+                            read=elem_read,
+                            write=elem_write,
+                            type_name=type_name,
+                        )
+                    )
+                elif isinstance(decl.type, c_ast.ArrayDecl):
                     memcpy_size = "sizeof(%s)*%s" % (
                         gen.visit(decl.type.type),
                         gen.visit(decl.type.dim),
