@@ -11,7 +11,7 @@ generator output — edit them here, then sync into consumer repos.
 `board_config`, lives in
 [PyDevices/pydevices `lib/`](https://github.com/PyDevices/pydevices/blob/main/lib/display_driver.py)
 and ships with `pydevices`, beside the `appdev`, `events`, `keys` and `multimer`
-it needs. It was here until 2026-10.
+it needs.
 
 ## Sync into consumers
 

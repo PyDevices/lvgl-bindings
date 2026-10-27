@@ -66,14 +66,13 @@ helpers remain private; concrete reachable LVGL structs, `C_Pointer`,
 `LvReferenceError`, lifecycle names, widgets, enums, callbacks, constants, and
 variables follow the canonical model.
 
-There are no target exceptions today. The last ones, `lv_tjpgd_init` and
-`lv_tjpgd_deinit`, are private on every target now: `lv_conf.h` sets
+There are no target exceptions. The last ones, `lv_tjpgd_init` and
+`lv_tjpgd_deinit`, are private on every target: `lv_conf.h` sets
 `LV_USE_TJPGD 0` for every real compile, because the JPEG decoder is jpegio's,
-registered through LVGL's public `lv_image_decoder_create` API by displayif
+registered through LVGL's public `lv_image_decoder_create` API by jpegio
 (MicroPython), lvgl-circuitpython (CircuitPython) and lvgl-python (CPython,
-which compiles displayif's decoder at a pinned commit and registers it from
-the `LVPY_AFTER_LV_INIT` hook). Each build carries one TJpgDec (see
-displayif#23, lvgl-bindings#14, lvgl-python#23). Target exceptions, when there
+which compiles jpegio's decoder at a pinned commit and registers it from
+the `LVPY_AFTER_LV_INIT` hook). Each build carries one TJpgDec. Target exceptions, when there
 are any, are declared in `binding/api_policy.json` and have policy, namespace,
 and runtime coverage. The compatibility report must contain zero unexplained
 differences. Because the generator preprocesses once, target-neutrally,
@@ -100,34 +99,4 @@ appearance. `tests/test_nesting_export.py` guards this by reading the names
 the freshly generated MicroPython/CircuitPython C exports; pydevices'
 `tests/test_lvgl_display_driver.py` holds the reader's side.
 
-## Commands and validation
-
-```bash
-# Generate all targets or one target
-./regenerate_all.sh
-./regenerate_all.sh --target micropython
-./regenerate_all.sh --target circuitpython
-./regenerate_all.sh --target cpython
-
-# Typings only and read-only reproducibility checks
-./regenerate_all.sh --pyi-only
-./regenerate_all.sh --check --hash
-
-# Repository and release gates
-TMPDIR=/tmp/lvgl-bindings-pytest .venv/bin/python -m pytest -q -s tests
-./scripts/verify_bindings.sh
-./scripts/release_dry_run.sh
-```
-
-The API report compares the canonical model to the compact, classified
-historical upstream baseline. `scratch/upstream_baseline/run.sh` verifies that
-the pinned upstream generator still reproduces that baseline without placing
-its source or full outputs in this repository.
-
-Consumer builds are part of integration validation: `linux-integration.yml`
-builds the MicroPython and CircuitPython unix ports with lvgl-micropython and
-lvgl-circuitpython pinned at the commit under test and runs
-`tools/test_lvgl_smoke.py` on each; CPython rebuilds its extension and wheel
-from the synced source.
-See [releasing-bindings.md](releasing-bindings.md) for exact-commit
-synchronization and publication boundaries.
+How to run the generator and its checks is in [CONTRIBUTING](https://github.com/PyDevices/lvgl-bindings/blob/main/CONTRIBUTING.md). The consumer builds are part of integration validation: the `linux-integration.yml` workflow builds the MicroPython and CircuitPython unix ports with lvgl-micropython and lvgl-circuitpython pinned at the commit under test, and runs `tools/test_lvgl_smoke.py` on each. CPython rebuilds its extension and wheel from the synced source.

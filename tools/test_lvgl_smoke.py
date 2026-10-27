@@ -219,7 +219,7 @@ def test_module_types(lv):
     # canonical API model (visibility="private" in api_model.py) but is
     # still deliberately emitted for MicroPython/CircuitPython -- see
     # emit_backend.module_registration_plan, the blob-table loop in
-    # emit_c_micropython_style.py, and docs/generator-architecture.md's
+    # emit_c_micropython_style.py, and docs/how-it-works/generator-architecture.md's
     # "Public API policy" section. CPython never emitted it (its own
     # ContextVar-scoped lvpy_nesting_inc/dec serves the same purpose) so it
     # stays forbidden there.

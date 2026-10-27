@@ -1,193 +1,50 @@
+![A blue button reading Hello from LVGL on a light gray background](docs/images/hello.png)
+
 # lvgl-bindings
 
-LVGL header-to-C binding generator for MicroPython, CircuitPython, and CPython.
-
-## The LVGL family
-
-This repo owns the binding tags and generated sources used by the downstream LVGL repos, and is
-the canonical description of how the family fits together:
-
-- **lvgl-bindings** (this repo) — generates the C bindings (`generated/lvgl_*.c`, `lvgl.pyi`) from
-  the LVGL headers for all three targets, and owns the release chain.
-- **[lvgl-python](https://github.com/PyDevices/lvgl-python)** — the publishing endpoint. Turns
-  synced bindings into versioned `pydevices-lvgl` wheels on TestPyPI. It is the only repo in the
-  family that publishes a package.
-- **[lvgl-circuitpython](https://github.com/PyDevices/lvgl-circuitpython)** and
-  **[lvgl-micropython](https://github.com/PyDevices/lvgl-micropython)** — consumer/build repos.
-  They consume the generated bindings and rebuild their own CircuitPython / MicroPython targets,
-  but do not publish their own packages to TestPyPI.
-
-Every other repo in the family links back to this section rather than repeating it.
-
-**SINGLE WRITER**: `python/` helpers, `lv_conf.h`, and the generated bindings under `generated/`
-are edited **only here**. Consumer repos sync these files in; any edits made directly in a
-consumer repo get silently overwritten by the next sync. See
-["Releases and propagation"](#releases-and-propagation) below.
-
-## Documentation
-
-- [Using LVGL with PyDevices](https://github.com/PyDevices/pydevices/blob/main/docs/lvgl.md) (in PyDevices/pydevices,
-  beside `display_driver`) — how the three sister projects fit together, and
-  what `display_driver` does.
-- [Loading fonts at runtime](docs/fonts.md) — `fonts/*.bin` and
-  `python/fs_driver.py`: any built-in font without a firmware rebuild.
-- [Generator architecture](docs/generator-architecture.md) — canonical model,
-  policy, target lowering, parser pin, and validation invariants.
-- [Generator migration](docs/generator-migration.md) — clean-break command and
-  artifact changes from the pre-rebuild generator.
-- [docs/](docs/) — the full index.
-
-What's planned next is in [ROADMAP.md](ROADMAP.md).
-
-## Layout
-
-```
-lvgl-bindings/
-  binding/              # Modular Python generator (binding.generate is the entry point)
-  lvgl/                 # LVGL submodule (git submodule update --init)
-  lv_conf.h             # Shared LVGL config for all targets
-  generated/            # Generated bindings, API model, and shared stub (committed)
-  python/               # Hand-written helpers (fs_driver.py — committed)
-  packages/             # Optional MIP manifests
-  regenerate_all.sh     # Primary entry point for regenerating all binding artifacts
-  docs/                 # Architecture, migration, release, and fonts documentation
-  fonts/                # Committed *.bin font artifacts loaded at runtime by fs_driver.py
-  tests/                # Generator unit tests
-  scratch/              # Tracked upstream-baseline oracle used to diff against LVGL upstream
-  tools/                # Artifact hashing and smoke checks
-  scripts/              # Verification and release utilities
-```
-
-## Clone
+lvgl-bindings generates the LVGL bindings that give MicroPython-compatible,
+CircuitPython-compatible and CPython programs the same `import lvgl as lv`,
+and its docs are the home for all of them: lvgl-python, lvgl-micropython and
+lvgl-circuitpython.
 
 ```bash
-git clone https://github.com/PyDevices/lvgl-bindings.git lvgl-bindings
-cd lvgl-bindings
-git submodule update --init lvgl
+python -m pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pydevices-lvgl
 ```
 
-The consumer repos don't need this clone beside them: each one's `scripts/sync_from_lvgl_bindings.sh` fetches an exact commit from GitHub, and `LV_BINDINGS_REPO` points it at your own clone or fork instead.
+On a board, LVGL comes with your firmware build:
+[lvgl-micropython](https://github.com/PyDevices/lvgl-micropython) and
+[lvgl-circuitpython](https://github.com/PyDevices/lvgl-circuitpython).
 
-## Setup
+```python
+import lvgl as lv
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements-dev.txt
+lv.init()
+disp = lv.display_create(240, 120)
+disp.set_color_format(lv.COLOR_FORMAT.RGB565)
+buf = bytearray(240 * 120 * 2)
+disp.set_buffers(buf, None, len(buf), lv.DISPLAY_RENDER_MODE.FULL)
+flushed = []
+disp.set_flush_cb(lambda d, area, px: (flushed.append(area.get_width()), d.flush_ready()))
+
+button = lv.button(lv.screen_active())
+button.center()
+label = lv.label(button)
+label.set_text("Hello from LVGL")
+button.add_event_cb(lambda e: print("clicked"), lv.EVENT.CLICKED, None)
+button.send_event(lv.EVENT.CLICKED, None)
+
+lv.tick_inc(50)
+lv.refr_now(disp)
+print(label.get_text(), "- drew", flushed[-1], "px wide")
 ```
 
-The runtime generator dependency set is available separately through
-`requirements.txt`; `requirements-dev.txt` also installs the pinned test and
-static-checking tools used by the validation commands below.
-
-## Typical workflow
-
-The practical flow is: make a small change in **`binding/`** or the LVGL submodule, regenerate the binding target you need, sync the generated files into the consumer repo, and then rebuild that repo’s firmware or extension. If you only touched the Python-side glue, start with **`python/fs_driver.py`** and the consumer sync script (LVGL's PyDevices coordinator, `display_driver.py`, is in PyDevices/pydevices and ships without a bindings release); if you changed the C API surface or LVGL headers, regenerate the relevant target first and rebuild the consumer before trusting the result.
-
-## Generate bindings
-
-Regenerate after changing `lvgl/`, `lv_conf.h`, or `binding/`, then commit the updated files under `generated/`:
-
-```bash
-./regenerate_all.sh                    # all targets
-./regenerate_all.sh --target micropython
-./regenerate_all.sh --target circuitpython
-./regenerate_all.sh --target cpython
-./regenerate_all.sh --pyi-only         # shared stub only
-./regenerate_all.sh --check --hash     # read-only reproducibility check, same gate release uses
+```text
+clicked
+Hello from LVGL - drew 240 px wide
 ```
 
-`regenerate_all.sh` is the primary entry point; it never commits, tags,
-pushes, or dispatches a release. Under the hood it calls the underlying
-generator directly:
+The picture at the top is the frame that program drew.
 
-```bash
-PYTHONPATH=. .venv/bin/python -m binding.generate
-```
+[Docs](https://github.com/PyDevices/lvgl-bindings/blob/main/docs/index.md) · [Examples](https://pydevices.github.io/pydevices-examples/pyscript/) · [Roadmap](ROADMAP.md)
 
-Use `-m binding.generate` directly only when you need flags the wrapper
-doesn't expose, such as `binding.api_report`:
-
-```bash
-PYTHONPATH=. .venv/bin/python -m binding.api_report generated/api.json \
-    --baseline docs/baseline/lvgl-bindings-api-baseline.json.gz \
-    --classification docs/baseline/lvgl-bindings-api-baseline-classification.json \
-    --format markdown
-```
-
-The unified command preprocesses LVGL once and writes the selected target C
-source, the target-neutral `api.json`, shared `lvgl.pp`, the CircuitPython
-generated header, and the shared `lvgl.pyi`. The API model is
-hashed and includes visibility and target availability; deliberate exceptions
-are recorded in `binding/api_policy.json`. Preprocessing removes compiler line markers so the
-inputs are reproducible across checkout paths. The command's `--check` mode
-generates into a temporary directory and never changes the working tree.
-
-The shared stub is generated exclusively from the canonical
-`generated/api.json` model. Use `--pyi-only` when changing typing emission so
-the C bindings, canonical API model, and preprocessed input are not
-regenerated. The public names are the single established upstream-compatible
-profile; the rebuild intentionally has no alternate naming mode.
-
-`binding.api_report` validates the canonical model and reports qualified export
-counts, common-target coverage, target availability exceptions,
-inheritance-expanded object APIs, generated target-artifact hashes, and the
-diagnostic projection against the historical baseline.
-
-All targets receive the same parsed declaration IR, canonical API model,
-context-local generation state, conversion discovery, inheritance order,
-registration plan, and diagnostics policy. MicroPython and CircuitPython share
-the `mp_obj_t` native lowering because CircuitPython embeds the same object API;
-target registration and VM/GC lifecycle mechanics remain in target glue.
-CPython lowering is native `PyObject *` code with its own GIL/lock and module
-initialization glue. Target emitters may choose different C representations,
-but they do not choose different public declarations.
-
-```bash
-./scripts/verify_bindings.sh  # Read-only checks
-```
-
-After regen, rebuild the consumer repo(s) (`lvgl-micropython`,
-`lvgl-circuitpython`, `lvgl-python`) as usual.
-
-Release workflow and tagging: [releasing-bindings.md](docs/releasing-bindings.md).
-
-## `display_driver`
-
-The coordinator that wires LVGL to a PyDevices `board_config` (display flush,
-input devices and the `multimer` event loop) is `display_driver.py` in
-[PyDevices/pydevices `lib/`](https://github.com/PyDevices/pydevices/blob/main/lib/display_driver.py).
-It ships with `pydevices` because it needs `appdev`, `events`, `keys` and
-`multimer`; the bindings don't, so you can use them with plumbing of your own.
-[Using LVGL with PyDevices](https://github.com/PyDevices/pydevices/blob/main/docs/lvgl.md) covers what it does.
-
-## Consumers
-
-| Repo | Role & Sync |
-|---|---|
-| [lvgl-micropython](https://github.com/PyDevices/lvgl-micropython) | MicroPython C module: `generated/lvgl_micropython.c`, `lvgl/`, `lv_conf.h`, `python/fs_driver.py` → `lib/` |
-| [lvgl-circuitpython](https://github.com/PyDevices/lvgl-circuitpython) | CircuitPython tree patches: `generated/lvgl_circuitpython.c`, `generated/lvgl_circuitpython.h`, `lvgl/`, `lv_conf.h`, `python/fs_driver.py` → `lib/` |
-| [lvgl-python](https://github.com/PyDevices/lvgl-python) | CPython extension & TestPyPI wheel publisher: exact-commit `generated/lvgl_python.c`, `generated/lvgl.pyi`, `lvgl/`, `lv_conf.h`, and helpers (see [releasing-bindings.md](docs/releasing-bindings.md)) |
-
-Each consumer records the resolved source SHA in `LVGL_BINDINGS_COMMIT`.
-Consumer sync scripts reject branch names so downstream builds cannot silently
-move to a different generator or artifact set.
-
-## Releases and propagation
-
-This repo publishes **source tags, not wheels or GitHub Releases** — an empty
-Releases sidebar here is deliberate, not a broken pipeline.
-
-Releases are explicit, never automatic:
-
-1. `./scripts/publish_release_tag.sh --push` (or with an explicit version) cuts and pushes an
-   annotated `vX.Y.Z` tag. Pushing the tag does not trigger anything by itself.
-2. Someone then dispatches `release.yml` with `publish=true` for that tag/SHA, which validates
-   the source across all three consumers and, only then, tells `lvgl-python` to sync and publish.
-
-**Merging to `main` releases and propagates nothing.** Consumers do not track `main`; each pins an
-exact `LVGL_BINDINGS_COMMIT` and only moves forward when its own sync is run against a specific
-commit or release tag. Of the family, only `lvgl-python` publishes a package (`pydevices-lvgl` on
-TestPyPI); `lvgl-micropython` and `lvgl-circuitpython` rebuild from the synced files but publish
-nothing themselves.
-
-See [releasing-bindings.md](docs/releasing-bindings.md) for the full release chain.
+OmniPython is made by [PyDevices](https://pydevices.com).
