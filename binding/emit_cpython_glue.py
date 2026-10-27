@@ -399,6 +399,17 @@ static struct PyModuleDef lvgl_module_def = {
                         name=py_name, san=san
                     )
                 )
+        if registration.struct_names:
+            # Structs that aren't exported, such as the type of an anonymous
+            # union field, are still returned by field reads, so their types
+            # must be ready (lvgl-bindings#39).
+            for struct_name, generated in generated_structs.items():
+                if generated and struct_name not in registration.struct_names:
+                    print(
+                        '    if (PyType_Ready(&py_{san}_type) < 0) return NULL;'.format(
+                            san=sanitize(struct_name)
+                        )
+                    )
 
         for global_name in cpython_global_types:
             global_type = cpython_global_types.get(global_name)

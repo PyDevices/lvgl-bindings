@@ -96137,6 +96137,20 @@ PyMODINIT_FUNC PyInit_lvgl(void)
     lv_struct_expose_size(&py_lv_indev_touch_data_t_type);
     Py_INCREF((PyObject *)&py_lv_indev_touch_data_t_type);
     if (PyModule_AddObject(m, "indev_touch_data_t", (PyObject *)&py_lv_indev_touch_data_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_grad_dsc_params_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_grad_dsc_params_linear_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_grad_dsc_params_radial_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_grad_dsc_params_conical_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_anim_parameter_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_anim_bezier3_para_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_font_glyph_dsc_gid_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_indev_pointer_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_indev_keypad_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_draw_sw_mask_line_param_cfg_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_draw_sw_mask_angle_param_cfg_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_draw_sw_mask_radius_param_cfg_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_draw_sw_mask_fade_param_cfg_t_type) < 0) return NULL;
+    if (PyType_Ready(&py_lv_draw_sw_mask_map_param_cfg_t_type) < 0) return NULL;
     { PyObject *obj = lv_to_mp_struct(&py_lv_color_filter_dsc_t_type, (void *)&lv_color_filter_shade); if (obj == NULL) return NULL; if (PyModule_AddObject(m, "color_filter_shade", obj) < 0) { Py_DECREF(obj); return NULL; } }
     { PyObject *obj = lv_to_mp_struct(&py_lv_tree_class_t_type, (void *)&lv_tree_node_class); if (obj == NULL) return NULL; if (PyModule_AddObject(m, "tree_node_class", obj) < 0) { Py_DECREF(obj); return NULL; } }
     { PyObject *obj = lv_to_mp_struct(&py_lv_font_t_type, (void *)&lv_font_montserrat_14); if (obj == NULL) return NULL; if (PyModule_AddObject(m, "font_montserrat_14", obj) < 0) { Py_DECREF(obj); return NULL; } }
