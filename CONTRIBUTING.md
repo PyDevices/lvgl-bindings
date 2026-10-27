@@ -5,7 +5,7 @@ lvgl-bindings is the **single writer** for the LVGL family. The generator in
 under `generated/` are edited only here. lvgl-python, lvgl-micropython and
 lvgl-circuitpython sync them in, and an edit made directly in one of those
 repositories is overwritten by its next sync. How the family fits together is
-on the [docs site](https://lvgl.readthedocs.io); this page is for changing it.
+on the [docs site](https://github.com/PyDevices/lvgl-bindings/blob/main/docs/index.md); this page is for changing it.
 
 If you are fixing something that only one package owns (the CPython runtime,
 the MicroPython allocator, a build file), open the pull request in that
