@@ -22,6 +22,7 @@
 #include "py/obj.h"
 #include "py/objint.h"
 #include "py/objstr.h"
+#include "py/objtuple.h"
 #include "py/runtime.h"
 #include "py/binary.h"
 #include "py/objarray.h"
@@ -982,6 +983,124 @@ static MP_DEFINE_CONST_OBJ_TYPE(
     buffer, mp_blob_get_buffer,
     locals_dict, &mp_base_struct_locals_dict
 );
+
+/*
+ * Fixed-size struct arrays inside a struct (lv_point_precise_t p[3]).
+ *
+ * Reading the field gives a view over the parent struct's memory, so
+ * d.p[1].x = 7 and d.p[1] = point write through, and len(d.p) works. The view
+ * holds the parent so the memory stays alive. Assigning the field takes a
+ * sequence of exactly that many structs (or dicts), or a packed buffer of the
+ * array's size; anything else raises and leaves the field unchanged
+ * (lvgl-bindings#38).
+ */
+
+typedef struct {
+    mp_obj_base_t base;
+    mp_obj_t owner;
+    char *data;
+    size_t len;
+    size_t elem_size;
+    mp_obj_t (*read)(void *elem);
+    void *(*write)(mp_obj_t value);
+} mp_lv_struct_array_t;
+
+static mp_obj_t lv_struct_array_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value)
+{
+    mp_lv_struct_array_t *self = MP_OBJ_TO_PTR(self_in);
+    if (value == MP_OBJ_NULL) {
+        mp_raise_TypeError(MP_ERROR_TEXT("can't delete struct array items"));
+    }
+    size_t i = mp_get_index(self->base.type, self->len, index, false);
+    char *elem = self->data + i * self->elem_size;
+    if (value == MP_OBJ_SENTINEL) {
+        return self->read(elem);
+    }
+    memcpy(elem, self->write(value), self->elem_size);
+    return mp_const_none;
+}
+
+static mp_obj_t lv_struct_array_unary_op(mp_unary_op_t op, mp_obj_t self_in)
+{
+    mp_lv_struct_array_t *self = MP_OBJ_TO_PTR(self_in);
+    switch (op) {
+        case MP_UNARY_OP_LEN: return MP_OBJ_NEW_SMALL_INT(self->len);
+        case MP_UNARY_OP_BOOL: return mp_obj_new_bool(self->len != 0);
+        default: return MP_OBJ_NULL;
+    }
+}
+
+// Iterates views of the elements, the same objects indexing returns.
+static mp_obj_t lv_struct_array_getiter(mp_obj_t self_in, mp_obj_iter_buf_t *iter_buf)
+{
+    mp_lv_struct_array_t *self = MP_OBJ_TO_PTR(self_in);
+    mp_obj_t items = mp_obj_new_tuple(self->len, NULL);
+    mp_obj_tuple_t *t = MP_OBJ_TO_PTR(items);
+    for (size_t i = 0; i < self->len; i++) {
+        t->items[i] = self->read(self->data + i * self->elem_size);
+    }
+    return mp_getiter(items, iter_buf);
+}
+
+static MP_DEFINE_CONST_OBJ_TYPE(
+    mp_lv_struct_array_type,
+    MP_QSTR_StructArray,
+    MP_TYPE_FLAG_ITER_IS_GETITER,
+    unary_op, lv_struct_array_unary_op,
+    subscr, lv_struct_array_subscr,
+    iter, lv_struct_array_getiter
+);
+
+GENMPY_UNUSED static mp_obj_t mp_lv_struct_array_new(mp_obj_t owner, void *data,
+    size_t len, size_t elem_size, mp_obj_t (*read)(void *), void *(*write)(mp_obj_t))
+{
+    mp_lv_struct_array_t *self = m_new_obj(mp_lv_struct_array_t);
+    self->base.type = &mp_lv_struct_array_type;
+    self->owner = owner;
+    self->data = (char *)data;
+    self->len = len;
+    self->elem_size = elem_size;
+    self->read = read;
+    self->write = write;
+    return MP_OBJ_FROM_PTR(self);
+}
+
+GENMPY_UNUSED static void mp_lv_struct_array_assign(void *data, size_t len,
+    size_t elem_size, void *(*write)(mp_obj_t), mp_obj_t value)
+{
+    if (MP_OBJ_IS_STR_OR_BYTES(value) ||
+        MP_OBJ_IS_TYPE(value, &mp_type_bytearray) ||
+        MP_OBJ_IS_TYPE(value, &mp_type_memoryview)) {
+        mp_buffer_info_t bufinfo;
+        mp_get_buffer_raise(value, &bufinfo, MP_BUFFER_READ);
+        if (bufinfo.len != len * elem_size) {
+            mp_raise_msg_varg(&mp_type_ValueError,
+                MP_ERROR_TEXT("expected a buffer of %d bytes, got %d"),
+                (int)(len * elem_size), (int)bufinfo.len);
+        }
+        memcpy(data, bufinfo.buf, bufinfo.len);
+        return;
+    }
+    mp_obj_t mp_len = mp_obj_len_maybe(value);
+    if (mp_len == MP_OBJ_NULL) {
+        mp_raise_msg_varg(&mp_type_TypeError,
+            MP_ERROR_TEXT("expected a sequence of %d structs, got '%s'"),
+            (int)len, mp_obj_get_type_str(value));
+    }
+    if ((size_t)mp_obj_get_int(mp_len) != len) {
+        mp_raise_msg_varg(&mp_type_ValueError,
+            MP_ERROR_TEXT("expected %d items, got %d"),
+            (int)len, (int)mp_obj_get_int(mp_len));
+    }
+    // Convert every item before writing any, so a bad item changes nothing.
+    char *tmp = m_new(char, len * elem_size);
+    for (size_t i = 0; i < len; i++) {
+        mp_obj_t item = mp_obj_subscr(value, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL);
+        memcpy(tmp + i * elem_size, write(item), elem_size);
+    }
+    memcpy(data, tmp, len * elem_size);
+    m_del(char, tmp, len * elem_size);
+}
 
 GENMPY_UNUSED static mp_obj_t mp_array_from_ptr(void *lv_arr, size_t element_size, bool is_signed)
 {
@@ -6243,7 +6362,7 @@ static void mp_lv_grad_dsc_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
         // load attribute
         switch(attr)
         {
-            case MP_QSTR_stops: dest[0] = mp_arr_from_lv_grad_stop_t___2__(data->stops); break; // converting from lv_grad_stop_t [2];
+            case MP_QSTR_stops: dest[0] = mp_lv_struct_array_new(self_in, data->stops, 2, sizeof(lv_grad_stop_t), mp_read_ptr_lv_grad_stop_t, mp_write_ptr_lv_grad_stop_t); break; // converting from lv_grad_stop_t [2];
             case MP_QSTR_stops_count: dest[0] = mp_obj_new_int_from_uint(data->stops_count); break; // converting from uint8_t;
             case MP_QSTR_dir: dest[0] = mp_obj_new_int(data->dir); break; // converting from lv_grad_dir_t;
             case MP_QSTR_extend: dest[0] = mp_obj_new_int(data->extend); break; // converting from lv_grad_extend_t;
@@ -6257,7 +6376,7 @@ static void mp_lv_grad_dsc_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             // store attribute
             switch(attr)
             {
-                case MP_QSTR_stops: memcpy((void*)&data->stops, mp_arr_to_lv_grad_stop_t___2__(dest[1]), sizeof(lv_grad_stop_t)*2); break; // converting to lv_grad_stop_t [2];
+                case MP_QSTR_stops: mp_lv_struct_array_assign(data->stops, 2, sizeof(lv_grad_stop_t), mp_write_ptr_lv_grad_stop_t, dest[1]); break; // converting to lv_grad_stop_t [2];
                 case MP_QSTR_stops_count: data->stops_count = (uint8_t)mp_obj_get_int(dest[1]); break; // converting to uint8_t;
                 case MP_QSTR_dir: data->dir = (int)mp_obj_get_int(dest[1]); break; // converting to lv_grad_dir_t;
                 case MP_QSTR_extend: data->extend = (int)mp_obj_get_int(dest[1]); break; // converting to lv_grad_extend_t;
@@ -10964,7 +11083,7 @@ static void mp_lv_display_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             case MP_QSTR_stride_is_auto: dest[0] = mp_obj_new_int_from_uint(data->stride_is_auto); break; // converting from uint32_t;
             case MP_QSTR_rendering_in_progress: dest[0] = mp_obj_new_int_from_uint(data->rendering_in_progress); break; // converting from uint32_t;
             case MP_QSTR_color_format: dest[0] = mp_obj_new_int(data->color_format); break; // converting from lv_color_format_t;
-            case MP_QSTR_inv_areas: dest[0] = mp_arr_from_lv_area_t___32__(data->inv_areas); break; // converting from lv_area_t [32];
+            case MP_QSTR_inv_areas: dest[0] = mp_lv_struct_array_new(self_in, data->inv_areas, 32, sizeof(lv_area_t), mp_read_ptr_lv_area_t, mp_write_ptr_lv_area_t); break; // converting from lv_area_t [32];
             case MP_QSTR_inv_area_joined: dest[0] = mp_arr_from_uint8_t___32__(data->inv_area_joined); break; // converting from uint8_t [32];
             case MP_QSTR_inv_p: dest[0] = mp_obj_new_int_from_uint(data->inv_p); break; // converting from uint32_t;
             case MP_QSTR_inv_en_cnt: dest[0] = mp_obj_new_int(data->inv_en_cnt); break; // converting from int32_t;
@@ -11025,7 +11144,7 @@ static void mp_lv_display_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
                 case MP_QSTR_stride_is_auto: data->stride_is_auto = (uint32_t)mp_obj_get_int(dest[1]); break; // converting to uint32_t;
                 case MP_QSTR_rendering_in_progress: data->rendering_in_progress = (uint32_t)mp_obj_get_int(dest[1]); break; // converting to uint32_t;
                 case MP_QSTR_color_format: data->color_format = (int)mp_obj_get_int(dest[1]); break; // converting to lv_color_format_t;
-                case MP_QSTR_inv_areas: memcpy((void*)&data->inv_areas, mp_arr_to_lv_area_t___32__(dest[1]), sizeof(lv_area_t)*32); break; // converting to lv_area_t [32];
+                case MP_QSTR_inv_areas: mp_lv_struct_array_assign(data->inv_areas, 32, sizeof(lv_area_t), mp_write_ptr_lv_area_t, dest[1]); break; // converting to lv_area_t [32];
                 case MP_QSTR_inv_area_joined: memcpy((void*)&data->inv_area_joined, mp_arr_to_uint8_t___32__(dest[1]), sizeof(uint8_t)*32); break; // converting to uint8_t [32];
                 case MP_QSTR_inv_p: data->inv_p = (uint32_t)mp_obj_get_int(dest[1]); break; // converting to uint32_t;
                 case MP_QSTR_inv_en_cnt: data->inv_en_cnt = (int32_t)mp_obj_get_int(dest[1]); break; // converting to int32_t;
@@ -29826,7 +29945,7 @@ static void mp_lv_draw_triangle_dsc_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t
         switch(attr)
         {
             case MP_QSTR_base: dest[0] = mp_read_byref_lv_draw_dsc_base_t(data->base); break; // converting from lv_draw_dsc_base_t;
-            case MP_QSTR_p: dest[0] = mp_arr_from_lv_point_precise_t___3__(data->p); break; // converting from lv_point_precise_t [3];
+            case MP_QSTR_p: dest[0] = mp_lv_struct_array_new(self_in, data->p, 3, sizeof(lv_point_precise_t), mp_read_ptr_lv_point_precise_t, mp_write_ptr_lv_point_precise_t); break; // converting from lv_point_precise_t [3];
             case MP_QSTR_color: dest[0] = mp_read_byref_lv_color_t(data->color); break; // converting from lv_color_t;
             case MP_QSTR_opa: dest[0] = mp_obj_new_int_from_uint(data->opa); break; // converting from lv_opa_t;
             case MP_QSTR_grad: dest[0] = mp_read_byref_lv_grad_dsc_t(data->grad); break; // converting from lv_grad_dsc_t;
@@ -29839,7 +29958,7 @@ static void mp_lv_draw_triangle_dsc_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t
             switch(attr)
             {
                 case MP_QSTR_base: data->base = mp_write_lv_draw_dsc_base_t(dest[1]); break; // converting to lv_draw_dsc_base_t;
-                case MP_QSTR_p: memcpy((void*)&data->p, mp_arr_to_lv_point_precise_t___3__(dest[1]), sizeof(lv_point_precise_t)*3); break; // converting to lv_point_precise_t [3];
+                case MP_QSTR_p: mp_lv_struct_array_assign(data->p, 3, sizeof(lv_point_precise_t), mp_write_ptr_lv_point_precise_t, dest[1]); break; // converting to lv_point_precise_t [3];
                 case MP_QSTR_color: data->color = mp_write_lv_color_t(dest[1]); break; // converting to lv_color_t;
                 case MP_QSTR_opa: data->opa = (uint8_t)mp_obj_get_int(dest[1]); break; // converting to lv_opa_t;
                 case MP_QSTR_grad: data->grad = mp_write_lv_grad_dsc_t(dest[1]); break; // converting to lv_grad_dsc_t;
@@ -30173,7 +30292,7 @@ static void mp_lv_indev_pointer_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t *de
             case MP_QSTR_last_point: dest[0] = mp_read_byref_lv_point_t(data->last_point); break; // converting from lv_point_t;
             case MP_QSTR_last_raw_point: dest[0] = mp_read_byref_lv_point_t(data->last_raw_point); break; // converting from lv_point_t;
             case MP_QSTR_vect: dest[0] = mp_read_byref_lv_point_t(data->vect); break; // converting from lv_point_t;
-            case MP_QSTR_vect_hist: dest[0] = mp_arr_from_lv_point_t___8__(data->vect_hist); break; // converting from lv_point_t [8];
+            case MP_QSTR_vect_hist: dest[0] = mp_lv_struct_array_new(self_in, data->vect_hist, 8, sizeof(lv_point_t), mp_read_ptr_lv_point_t, mp_write_ptr_lv_point_t); break; // converting from lv_point_t [8];
             case MP_QSTR_vect_hist_timestamp: dest[0] = mp_arr_from_uint32_t___8__(data->vect_hist_timestamp); break; // converting from uint32_t [8];
             case MP_QSTR_vect_hist_index: dest[0] = mp_obj_new_int_from_uint(data->vect_hist_index); break; // converting from uint8_t;
             case MP_QSTR_scroll_sum: dest[0] = mp_read_byref_lv_point_t(data->scroll_sum); break; // converting from lv_point_t;
@@ -30206,7 +30325,7 @@ static void mp_lv_indev_pointer_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t *de
                 case MP_QSTR_last_point: data->last_point = mp_write_lv_point_t(dest[1]); break; // converting to lv_point_t;
                 case MP_QSTR_last_raw_point: data->last_raw_point = mp_write_lv_point_t(dest[1]); break; // converting to lv_point_t;
                 case MP_QSTR_vect: data->vect = mp_write_lv_point_t(dest[1]); break; // converting to lv_point_t;
-                case MP_QSTR_vect_hist: memcpy((void*)&data->vect_hist, mp_arr_to_lv_point_t___8__(dest[1]), sizeof(lv_point_t)*8); break; // converting to lv_point_t [8];
+                case MP_QSTR_vect_hist: mp_lv_struct_array_assign(data->vect_hist, 8, sizeof(lv_point_t), mp_write_ptr_lv_point_t, dest[1]); break; // converting to lv_point_t [8];
                 case MP_QSTR_vect_hist_timestamp: memcpy((void*)&data->vect_hist_timestamp, mp_arr_to_uint32_t___8__(dest[1]), sizeof(uint32_t)*8); break; // converting to uint32_t [8];
                 case MP_QSTR_vect_hist_index: data->vect_hist_index = (uint8_t)mp_obj_get_int(dest[1]); break; // converting to uint8_t;
                 case MP_QSTR_scroll_sum: data->scroll_sum = mp_write_lv_point_t(dest[1]); break; // converting to lv_point_t;
@@ -30832,7 +30951,7 @@ static void mp_lv_indev_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             case MP_QSTR_event_list: dest[0] = mp_read_byref_lv_event_list_t(data->event_list); break; // converting from lv_event_list_t;
             case MP_QSTR_scroll_throw_anim: dest[0] = mp_read_ptr_lv_anim_t((void*)data->scroll_throw_anim); break; // converting from lv_anim_t *;
             case MP_QSTR_key_remap_cb: dest[0] = mp_lv_funcptr(&mp_funcptr_lv_indev_key_remap_cb_t_mpobj, data->key_remap_cb, lv_indev_t_key_remap_cb_callback ,MP_QSTR_lv_indev_t_key_remap_cb, data->user_data); break; // converting from callback lv_indev_key_remap_cb_t;
-            case MP_QSTR_recognizers: dest[0] = mp_arr_from_lv_indev_gesture_recognizer_t___LV_INDEV_GESTURE_CNT__(data->recognizers); break; // converting from lv_indev_gesture_recognizer_t [LV_INDEV_GESTURE_CNT];
+            case MP_QSTR_recognizers: dest[0] = mp_lv_struct_array_new(self_in, data->recognizers, LV_INDEV_GESTURE_CNT, sizeof(lv_indev_gesture_recognizer_t), mp_read_ptr_lv_indev_gesture_recognizer_t, mp_write_ptr_lv_indev_gesture_recognizer_t); break; // converting from lv_indev_gesture_recognizer_t [LV_INDEV_GESTURE_CNT];
             case MP_QSTR_cur_gesture: dest[0] = mp_obj_new_int(data->cur_gesture); break; // converting from lv_indev_gesture_type_t;
             case MP_QSTR_gesture_data: dest[0] = mp_arr_from_void_ptr__LV_INDEV_GESTURE_CNT__(data->gesture_data); break; // converting from void *[LV_INDEV_GESTURE_CNT];
             case MP_QSTR_gesture_type: dest[0] = mp_arr_from_lv_indev_gesture_type_t___LV_INDEV_GESTURE_CNT__(data->gesture_type); break; // converting from lv_indev_gesture_type_t [LV_INDEV_GESTURE_CNT];
@@ -30876,7 +30995,7 @@ static void mp_lv_indev_t_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
                 case MP_QSTR_event_list: data->event_list = mp_write_lv_event_list_t(dest[1]); break; // converting to lv_event_list_t;
                 case MP_QSTR_scroll_throw_anim: data->scroll_throw_anim = (void*)mp_write_ptr_lv_anim_t(dest[1]); break; // converting to lv_anim_t *;
                 case MP_QSTR_key_remap_cb: data->key_remap_cb = mp_lv_callback(dest[1], lv_indev_t_key_remap_cb_callback ,MP_QSTR_lv_indev_t_key_remap_cb, &data->user_data, NULL, NULL, NULL); break; // converting to callback lv_indev_key_remap_cb_t;
-                case MP_QSTR_recognizers: memcpy((void*)&data->recognizers, mp_arr_to_lv_indev_gesture_recognizer_t___LV_INDEV_GESTURE_CNT__(dest[1]), sizeof(lv_indev_gesture_recognizer_t)*LV_INDEV_GESTURE_CNT); break; // converting to lv_indev_gesture_recognizer_t [LV_INDEV_GESTURE_CNT];
+                case MP_QSTR_recognizers: mp_lv_struct_array_assign(data->recognizers, LV_INDEV_GESTURE_CNT, sizeof(lv_indev_gesture_recognizer_t), mp_write_ptr_lv_indev_gesture_recognizer_t, dest[1]); break; // converting to lv_indev_gesture_recognizer_t [LV_INDEV_GESTURE_CNT];
                 case MP_QSTR_cur_gesture: data->cur_gesture = (int)mp_obj_get_int(dest[1]); break; // converting to lv_indev_gesture_type_t;
                 case MP_QSTR_gesture_data: memcpy((void*)&data->gesture_data, mp_arr_to_void_ptr__LV_INDEV_GESTURE_CNT__(dest[1]), sizeof(void *)*LV_INDEV_GESTURE_CNT); break; // converting to void *[LV_INDEV_GESTURE_CNT];
                 case MP_QSTR_gesture_type: memcpy((void*)&data->gesture_type, mp_arr_to_lv_indev_gesture_type_t___LV_INDEV_GESTURE_CNT__(dest[1]), sizeof(lv_indev_gesture_type_t)*LV_INDEV_GESTURE_CNT); break; // converting to lv_indev_gesture_type_t [LV_INDEV_GESTURE_CNT];

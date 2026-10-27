@@ -154,6 +154,142 @@ static void *lvpy_struct_arr_arg(PyObject *self, PyObject *arg, const char *key,
     return arr;
 }
 
+/*
+ * Fixed-size struct arrays inside a struct (lv_point_precise_t p[3]).
+ *
+ * Reading the field gives a view over the parent struct's memory, so
+ * d.p[1].x = 7 and d.p[1] = point write through, and len(d.p) works. The view
+ * holds the parent so the memory stays alive. Assigning the field takes a
+ * sequence of exactly that many structs (or dicts), or a packed buffer of the
+ * array's size; anything else raises and leaves the field unchanged
+ * (lvgl-bindings#38).
+ */
+
+typedef PyObject *(*lvpy_struct_reader_t)(void *);
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *owner;
+    char *data;
+    Py_ssize_t len;
+    size_t elem_size;
+    lvpy_struct_reader_t read;
+    lvpy_struct_writer_t write;
+} lvpy_struct_array_t;
+
+static void lvpy_struct_array_dealloc(PyObject *self)
+{
+    Py_XDECREF(((lvpy_struct_array_t *)self)->owner);
+    Py_TYPE(self)->tp_free(self);
+}
+
+static Py_ssize_t lvpy_struct_array_len(PyObject *self)
+{
+    return ((lvpy_struct_array_t *)self)->len;
+}
+
+static PyObject *lvpy_struct_array_item(PyObject *self_in, Py_ssize_t i)
+{
+    lvpy_struct_array_t *self = (lvpy_struct_array_t *)self_in;
+    if (i < 0 || i >= self->len) {
+        PyErr_SetString(PyExc_IndexError, "struct array index out of range");
+        return NULL;
+    }
+    return self->read(self->data + (size_t)i * self->elem_size);
+}
+
+static int lvpy_struct_array_ass_item(PyObject *self_in, Py_ssize_t i, PyObject *value)
+{
+    lvpy_struct_array_t *self = (lvpy_struct_array_t *)self_in;
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete struct array items");
+        return -1;
+    }
+    if (i < 0 || i >= self->len) {
+        PyErr_SetString(PyExc_IndexError, "struct array assignment index out of range");
+        return -1;
+    }
+    void *p = self->write(value);
+    if (PyErr_Occurred()) return -1;
+    memcpy(self->data + (size_t)i * self->elem_size, p, self->elem_size);
+    return 0;
+}
+
+static PySequenceMethods lvpy_struct_array_as_sequence = {
+    .sq_length = lvpy_struct_array_len,
+    .sq_item = lvpy_struct_array_item,
+    .sq_ass_item = lvpy_struct_array_ass_item,
+};
+
+static PyTypeObject lvpy_struct_array_type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "lvgl.StructArray",
+    .tp_basicsize = sizeof(lvpy_struct_array_t),
+    .tp_dealloc = lvpy_struct_array_dealloc,
+    .tp_as_sequence = &lvpy_struct_array_as_sequence,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+};
+
+static inline PyObject *lvpy_struct_array_new(PyObject *owner, void *data,
+    Py_ssize_t len, size_t elem_size, lvpy_struct_reader_t read, lvpy_struct_writer_t write)
+{
+    if (!(lvpy_struct_array_type.tp_flags & Py_TPFLAGS_READY) &&
+        PyType_Ready(&lvpy_struct_array_type) < 0)
+        return NULL;
+    lvpy_struct_array_t *self = PyObject_New(lvpy_struct_array_t, &lvpy_struct_array_type);
+    if (!self) return NULL;
+    Py_XINCREF(owner);
+    self->owner = owner;
+    self->data = (char *)data;
+    self->len = len;
+    self->elem_size = elem_size;
+    self->read = read;
+    self->write = write;
+    return (PyObject *)self;
+}
+
+/* Sets an exception and leaves data unchanged on any mismatch. */
+static inline void lvpy_struct_array_assign(void *data, Py_ssize_t len,
+    size_t elem_size, lvpy_struct_writer_t write, PyObject *value)
+{
+    size_t total = (size_t)len * elem_size;
+    if (PyBytes_Check(value) || PyByteArray_Check(value) || PyMemoryView_Check(value)) {
+        Py_buffer view;
+        if (PyObject_GetBuffer(value, &view, PyBUF_C_CONTIGUOUS) < 0) return;
+        if ((size_t)view.len != total)
+            PyErr_Format(PyExc_ValueError, "expected a buffer of %zu bytes, got %zd",
+                         total, view.len);
+        else
+            memcpy(data, view.buf, total);
+        PyBuffer_Release(&view);
+        return;
+    }
+    if (!PySequence_Check(value) || PyUnicode_Check(value)) {
+        PyErr_Format(PyExc_TypeError, "expected a sequence of %zd structs, got '%s'",
+                     len, Py_TYPE(value)->tp_name);
+        return;
+    }
+    PyObject *items = PySequence_Tuple(value);
+    if (!items) return;
+    if (PyTuple_GET_SIZE(items) != len) {
+        PyErr_Format(PyExc_ValueError, "expected %zd items, got %zd",
+                     len, PyTuple_GET_SIZE(items));
+        Py_DECREF(items);
+        return;
+    }
+    /* Convert every item before writing any, so a bad item changes nothing. */
+    char *tmp = (char *)PyMem_Malloc(total ? total : 1);
+    if (!tmp) { Py_DECREF(items); PyErr_NoMemory(); return; }
+    for (Py_ssize_t i = 0; i < len; i++) {
+        void *p = write(PyTuple_GET_ITEM(items, i));
+        if (PyErr_Occurred()) { PyMem_Free(tmp); Py_DECREF(items); return; }
+        memcpy(tmp + (size_t)i * elem_size, p, elem_size);
+    }
+    memcpy(data, tmp, total);
+    PyMem_Free(tmp);
+    Py_DECREF(items);
+}
+
 
 /*
  * LVGL string constants
@@ -7556,7 +7692,7 @@ static PyObject *py_lv_grad_dsc_t_getattro(PyObject *self, PyObject *name)
     }
     const char *attr = PyUnicode_AsUTF8(name);
     if (attr == NULL) return NULL;
-    if (strcmp(attr, "stops") == 0) return ptr_to_mp(data->stops);
+    if (strcmp(attr, "stops") == 0) return lvpy_struct_array_new(self, data->stops, 2, sizeof(lv_grad_stop_t), mp_read_ptr_lv_grad_stop_t, mp_write_value_ptr_lv_grad_stop_t);
     if (strcmp(attr, "stops_count") == 0) return mp_obj_new_int_from_uint(data->stops_count);
     if (strcmp(attr, "dir") == 0) return mp_obj_new_int(data->dir);
     if (strcmp(attr, "extend") == 0) return mp_obj_new_int(data->extend);
@@ -7585,7 +7721,7 @@ static int py_lv_grad_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *v
     int result = -1;
     lv_grad_dsc_t saved;
     memcpy(&saved, data, sizeof(saved));
-    if (strcmp(attr, "stops") == 0) { memcpy((void*)&data->stops, mp_to_ptr(value), sizeof(lv_grad_stop_t)*2); result = 0; }
+    if (strcmp(attr, "stops") == 0) { lvpy_struct_array_assign(data->stops, 2, sizeof(lv_grad_stop_t), mp_write_value_ptr_lv_grad_stop_t, value); result = 0; }
     if (strcmp(attr, "stops_count") == 0) { data->stops_count = (uint8_t)mp_obj_get_int(value); result = 0; }
     if (strcmp(attr, "dir") == 0) { data->dir = (int)mp_obj_get_int(value); result = 0; }
     if (strcmp(attr, "extend") == 0) { data->extend = (int)mp_obj_get_int(value); result = 0; }
@@ -14241,7 +14377,7 @@ static PyObject *py_lv_display_t_getattro(PyObject *self, PyObject *name)
     if (strcmp(attr, "stride_is_auto") == 0) return mp_obj_new_int_from_uint(data->stride_is_auto);
     if (strcmp(attr, "rendering_in_progress") == 0) return mp_obj_new_int_from_uint(data->rendering_in_progress);
     if (strcmp(attr, "color_format") == 0) return mp_obj_new_int(data->color_format);
-    if (strcmp(attr, "inv_areas") == 0) return ptr_to_mp(data->inv_areas);
+    if (strcmp(attr, "inv_areas") == 0) return lvpy_struct_array_new(self, data->inv_areas, 32, sizeof(lv_area_t), mp_read_ptr_lv_area_t, mp_write_value_ptr_lv_area_t);
     if (strcmp(attr, "inv_area_joined") == 0) return ptr_to_mp(data->inv_area_joined);
     if (strcmp(attr, "inv_p") == 0) return mp_obj_new_int_from_uint(data->inv_p);
     if (strcmp(attr, "inv_en_cnt") == 0) return mp_obj_new_int(data->inv_en_cnt);
@@ -14318,7 +14454,7 @@ static int py_lv_display_t_setattro(PyObject *self, PyObject *name, PyObject *va
     if (strcmp(attr, "stride_is_auto") == 0) { data->stride_is_auto = (uint32_t)mp_obj_get_int(value); result = 0; }
     if (strcmp(attr, "rendering_in_progress") == 0) { data->rendering_in_progress = (uint32_t)mp_obj_get_int(value); result = 0; }
     if (strcmp(attr, "color_format") == 0) { data->color_format = (int)mp_obj_get_int(value); result = 0; }
-    if (strcmp(attr, "inv_areas") == 0) { memcpy((void*)&data->inv_areas, mp_to_ptr(value), sizeof(lv_area_t)*32); result = 0; }
+    if (strcmp(attr, "inv_areas") == 0) { lvpy_struct_array_assign(data->inv_areas, 32, sizeof(lv_area_t), mp_write_value_ptr_lv_area_t, value); result = 0; }
     if (strcmp(attr, "inv_area_joined") == 0) { memcpy((void*)&data->inv_area_joined, mp_to_ptr(value), sizeof(uint8_t)*32); result = 0; }
     if (strcmp(attr, "inv_p") == 0) { data->inv_p = (uint32_t)mp_obj_get_int(value); result = 0; }
     if (strcmp(attr, "inv_en_cnt") == 0) { data->inv_en_cnt = (int32_t)mp_obj_get_int(value); result = 0; }
@@ -53988,7 +54124,7 @@ static PyObject *py_lv_draw_triangle_dsc_t_getattro(PyObject *self, PyObject *na
     const char *attr = PyUnicode_AsUTF8(name);
     if (attr == NULL) return NULL;
     if (strcmp(attr, "base") == 0) return mp_read_byref_lv_draw_dsc_base_t(data->base);
-    if (strcmp(attr, "p") == 0) return ptr_to_mp(data->p);
+    if (strcmp(attr, "p") == 0) return lvpy_struct_array_new(self, data->p, 3, sizeof(lv_point_precise_t), mp_read_ptr_lv_point_precise_t, mp_write_value_ptr_lv_point_precise_t);
     if (strcmp(attr, "color") == 0) return mp_read_byref_lv_color_t(data->color);
     if (strcmp(attr, "opa") == 0) return mp_obj_new_int_from_uint(data->opa);
     if (strcmp(attr, "grad") == 0) return mp_read_byref_lv_grad_dsc_t(data->grad);
@@ -54017,7 +54153,7 @@ static int py_lv_draw_triangle_dsc_t_setattro(PyObject *self, PyObject *name, Py
     lv_draw_triangle_dsc_t saved;
     memcpy(&saved, data, sizeof(saved));
     if (strcmp(attr, "base") == 0) { data->base = mp_write_lv_draw_dsc_base_t(value); result = 0; }
-    if (strcmp(attr, "p") == 0) { memcpy((void*)&data->p, mp_to_ptr(value), sizeof(lv_point_precise_t)*3); result = 0; }
+    if (strcmp(attr, "p") == 0) { lvpy_struct_array_assign(data->p, 3, sizeof(lv_point_precise_t), mp_write_value_ptr_lv_point_precise_t, value); result = 0; }
     if (strcmp(attr, "color") == 0) { data->color = mp_write_lv_color_t(value); result = 0; }
     if (strcmp(attr, "opa") == 0) { data->opa = (uint8_t)mp_obj_get_int(value); result = 0; }
     if (strcmp(attr, "grad") == 0) { data->grad = mp_write_lv_grad_dsc_t(value); result = 0; }
@@ -54488,7 +54624,7 @@ static PyObject *py_lv_indev_t_getattro(PyObject *self, PyObject *name)
     if (strcmp(attr, "event_list") == 0) return mp_read_byref_lv_event_list_t(data->event_list);
     if (strcmp(attr, "scroll_throw_anim") == 0) return mp_read_ptr_lv_anim_t((void*)data->scroll_throw_anim);
     if (strcmp(attr, "key_remap_cb") == 0) return mp_lv_funcptr(NULL, data->key_remap_cb, lv_indev_t_key_remap_cb_callback, "lv_indev_t_key_remap_cb", data->user_data);
-    if (strcmp(attr, "recognizers") == 0) return ptr_to_mp(data->recognizers);
+    if (strcmp(attr, "recognizers") == 0) return lvpy_struct_array_new(self, data->recognizers, LV_INDEV_GESTURE_CNT, sizeof(lv_indev_gesture_recognizer_t), mp_read_ptr_lv_indev_gesture_recognizer_t, mp_write_value_ptr_lv_indev_gesture_recognizer_t);
     if (strcmp(attr, "cur_gesture") == 0) return mp_obj_new_int(data->cur_gesture);
     if (strcmp(attr, "gesture_data") == 0) return ptr_to_mp(data->gesture_data);
     if (strcmp(attr, "gesture_type") == 0) return ptr_to_mp(data->gesture_type);
@@ -54546,7 +54682,7 @@ static int py_lv_indev_t_setattro(PyObject *self, PyObject *name, PyObject *valu
     if (strcmp(attr, "event_list") == 0) { data->event_list = mp_write_lv_event_list_t(value); result = 0; }
     if (strcmp(attr, "scroll_throw_anim") == 0) { data->scroll_throw_anim = (void*)mp_write_ptr_lv_anim_t(value); result = 0; }
     if (strcmp(attr, "key_remap_cb") == 0) { data->key_remap_cb = mp_lv_callback(value, lv_indev_t_key_remap_cb_callback, "lv_indev_t_key_remap_cb", &data->user_data, data, NULL, NULL); result = 0; }
-    if (strcmp(attr, "recognizers") == 0) { memcpy((void*)&data->recognizers, mp_to_ptr(value), sizeof(lv_indev_gesture_recognizer_t)*LV_INDEV_GESTURE_CNT); result = 0; }
+    if (strcmp(attr, "recognizers") == 0) { lvpy_struct_array_assign(data->recognizers, LV_INDEV_GESTURE_CNT, sizeof(lv_indev_gesture_recognizer_t), mp_write_value_ptr_lv_indev_gesture_recognizer_t, value); result = 0; }
     if (strcmp(attr, "cur_gesture") == 0) { data->cur_gesture = (int)mp_obj_get_int(value); result = 0; }
     if (strcmp(attr, "gesture_data") == 0) { memcpy((void*)&data->gesture_data, mp_to_ptr(value), sizeof(void *)*LV_INDEV_GESTURE_CNT); result = 0; }
     if (strcmp(attr, "gesture_type") == 0) { memcpy((void*)&data->gesture_type, mp_to_ptr(value), sizeof(lv_indev_gesture_type_t)*LV_INDEV_GESTURE_CNT); result = 0; }
