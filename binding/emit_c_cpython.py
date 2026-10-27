@@ -357,6 +357,29 @@ static PySequenceMethods lvpy_struct_array_as_sequence = {
     .sq_ass_item = lvpy_struct_array_ass_item,
 };
 
+/* dir() on a struct instance: what object.__dir__ finds, plus the fields and
+ * methods the struct's getattro resolves by name (lvgl-bindings#40). */
+static inline PyObject *lvpy_struct_dir(PyObject *self, const char *const *fields,
+    PyMethodDef *methods)
+{
+    PyObject *names = PyObject_CallMethod((PyObject *)&PyBaseObject_Type, "__dir__", "O", self);
+    if (names == NULL) return NULL;
+    PyObject *list = PySequence_List(names);
+    Py_DECREF(names);
+    if (list == NULL) return NULL;
+    for (; *fields != NULL; fields++) {
+        PyObject *s = PyUnicode_FromString(*fields);
+        if (s == NULL || PyList_Append(list, s) < 0) { Py_XDECREF(s); Py_DECREF(list); return NULL; }
+        Py_DECREF(s);
+    }
+    for (; methods->ml_name != NULL; methods++) {
+        PyObject *s = PyUnicode_FromString(methods->ml_name);
+        if (s == NULL || PyList_Append(list, s) < 0) { Py_XDECREF(s); Py_DECREF(list); return NULL; }
+        Py_DECREF(s);
+    }
+    return list;
+}
+
 static PyTypeObject lvpy_struct_array_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "lvgl.StructArray",

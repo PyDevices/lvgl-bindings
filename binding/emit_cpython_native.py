@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import re
 import collections
 import copy
 from contextvars import ContextVar
@@ -475,6 +476,19 @@ static PyObject *py_{san}_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }}
 
+static const char *const py_{san}_field_names[] = {{{field_names}NULL}};
+
+static PyObject *py_{san}_dir(PyObject *self, PyObject *unused)
+{{
+    (void)unused;
+    return lvpy_struct_dir(self, py_{san}_field_names, py_{san}_methods);
+}}
+
+static PyMethodDef py_{san}_type_methods[] = {{
+    {{"__dir__", py_{san}_dir, METH_NOARGS, NULL}},
+    {{NULL}}
+}};
+
 static int py_{san}_setattro(PyObject *self, PyObject *name, PyObject *value)
 {{
     if (value == NULL) {{
@@ -520,6 +534,7 @@ PyTypeObject py_{san}_type = {{
     .tp_getattro = (getter)py_{san}_getattro,
     .tp_setattro = (setter)py_{san}_setattro,
     .tp_new = py_{san}_new,
+    .tp_methods = py_{san}_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 }};
@@ -549,6 +564,12 @@ static inline PyObject *mp_read_ptr_{san}(void *field)
             san=sanitized_struct_name,
             struct_tag=struct_tag,
             read_cases="\n    ".join(read_cases) if read_cases else "(void)attr;",
+            field_names="".join(
+                '"%s", ' % name
+                for name in dict.fromkeys(
+                    re.findall(r'strcmp\(attr, "([^"]+)"\)', "".join(read_cases))
+                )
+            ),
             write_cases="\n    ".join(write_cases) if write_cases else "(void)value;",
             elem_size=elem_size_expr,
             # A conversion that fails has already stored its placeholder, so
