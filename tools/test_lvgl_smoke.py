@@ -641,6 +641,39 @@ def test_struct_dir(lv):
     print("OK: dir() on a struct lists its fields and methods")
 
 
+def test_struct_methods_by_value(lv):
+    # Struct methods that take their struct by value, not by pointer, are
+    # methods on every runtime (lvgl-bindings#46).
+    c = lv.color_hex(0x336699)
+    if (c.red, c.green, c.blue) != (0x33, 0x66, 0x99):
+        _fail("color_hex gave %r" % ((c.red, c.green, c.blue),))
+    if c.to_u32() & 0xFFFFFF != 0x336699:
+        _fail("color_t.to_u32() is %r" % (c.to_u32(),))
+    if not c.eq(lv.color_hex(0x336699)) or c.eq(lv.color_hex(0x000000)):
+        _fail("color_t.eq() is wrong")
+    if not 0 < c.brightness() < 255:
+        _fail("color_t.brightness() is %r" % (c.brightness(),))
+    lighter = c.lighten(128)
+    if lighter.red <= c.red:
+        _fail("color_t.lighten() did not lighten: %r" % (lighter.red,))
+    if (c.red, c.green, c.blue) != (0x33, 0x66, 0x99):
+        _fail("a by-value method changed its receiver")
+    c32 = c.to_32(255)
+    if (c32.red, c32.alpha) != (0x33, 255) or not c32.eq(c.to_32(255)):
+        _fail("color_t.to_32() or color32_t.eq() is wrong")
+    for type_name, names in (
+        ("color16_t", ("luminance", "to_color")),
+        ("color32_t", ("color_mix32", "color_over32", "luminance")),
+        ("area_t", ("diff",)),
+        ("layout_callbacks_t", ("create",)),
+    ):
+        obj = _lv_export(lv, type_name)()
+        missing = [n for n in names if not hasattr(obj, n)]
+        if missing:
+            _fail("%s has no %r" % (type_name, missing))
+    print("OK: struct methods that take the struct by value")
+
+
 def test_struct_value_from_dict(lv):
     # A struct-by-value field takes a dict, as its type's constructor does, and
     # a wrong type raises instead of crashing CPython (lvgl-bindings#21).
@@ -740,6 +773,7 @@ def main():
         test_struct_array_fields(lv)
         test_grad_helpers(lv)
         test_struct_dir(lv)
+        test_struct_methods_by_value(lv)
         test_struct_value_from_dict(lv)
         test_event_callback(lv)
         test_callback_gc_with_widget_ref(lv)

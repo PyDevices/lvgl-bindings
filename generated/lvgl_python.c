@@ -69491,14 +69491,13 @@ static PyMethodDef py_lv_event_mark_deleted_def = {
  * lvgl extension definition for:
  * inline static bool lv_color_is_in_range(lv_color_t color, lv_color_t l_color, lv_color_t h_color)
  */
-static PyObject *py_lv_color_is_in_range(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_is_in_range_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *color_py; PyObject *l_color_py; PyObject *h_color_py;
-    if (!PyArg_ParseTuple(py_args, "OOO", &color_py, &l_color_py, &h_color_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t color = mp_write_lv_color_t(color_py);
+    PyObject *l_color_py; PyObject *h_color_py;
+    if (!PyArg_ParseTuple(py_args, "OO", &l_color_py, &h_color_py)) { PyGILState_Release(gstate); return NULL; }
+    lv_color_t color = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) color = *p_; }
     lv_color_t l_color = mp_write_lv_color_t(l_color_py);
     lv_color_t h_color = mp_write_lv_color_t(h_color_py);
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
@@ -69512,9 +69511,9 @@ static PyObject *py_lv_color_is_in_range(PyObject *self, PyObject *py_args, PyOb
     return convert_to_bool(_res);
 }
 
-static PyMethodDef py_lv_color_is_in_range_def = {
+static PyMethodDef py_lv_color_is_in_range_struct_method_def = {
     "lv_color_is_in_range",
-    (PyCFunction)py_lv_color_is_in_range,
+    (PyCFunction)py_lv_color_is_in_range_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69524,14 +69523,13 @@ static PyMethodDef py_lv_color_is_in_range_def = {
  * lvgl extension definition for:
  * lv_color32_t lv_color_to_32(lv_color_t color, lv_opa_t opa)
  */
-static PyObject *py_lv_color_to_32(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_to_32_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *color_py; long opa_val;
-    if (!PyArg_ParseTuple(py_args, "Ol", &color_py, &opa_val)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t color = mp_write_lv_color_t(color_py);
+    long opa_val;
+    if (!PyArg_ParseTuple(py_args, "l", &opa_val)) { PyGILState_Release(gstate); return NULL; }
+    lv_color_t color = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) color = *p_; }
     lv_opa_t opa = (lv_opa_t)opa_val;
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
@@ -69544,9 +69542,9 @@ static PyObject *py_lv_color_to_32(PyObject *self, PyObject *py_args, PyObject *
     return mp_read_lv_color32_t(_res);
 }
 
-static PyMethodDef py_lv_color_to_32_def = {
+static PyMethodDef py_lv_color_to_32_struct_method_def = {
     "lv_color_to_32",
-    (PyCFunction)py_lv_color_to_32,
+    (PyCFunction)py_lv_color_to_32_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69556,14 +69554,12 @@ static PyMethodDef py_lv_color_to_32_def = {
  * lvgl extension definition for:
  * uint32_t lv_color_to_int(lv_color_t c)
  */
-static PyObject *py_lv_color_to_int(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_to_int_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c_py;
-    if (!PyArg_ParseTuple(py_args, "O", &c_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t c = mp_write_lv_color_t(c_py);
+
+    lv_color_t c = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) c = *p_; }
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     uint32_t _res;
@@ -69575,9 +69571,9 @@ static PyObject *py_lv_color_to_int(PyObject *self, PyObject *py_args, PyObject 
     return mp_obj_new_int_from_uint(_res);
 }
 
-static PyMethodDef py_lv_color_to_int_def = {
+static PyMethodDef py_lv_color_to_int_struct_method_def = {
     "lv_color_to_int",
-    (PyCFunction)py_lv_color_to_int,
+    (PyCFunction)py_lv_color_to_int_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69587,14 +69583,13 @@ static PyMethodDef py_lv_color_to_int_def = {
  * lvgl extension definition for:
  * bool lv_color_eq(lv_color_t c1, lv_color_t c2)
  */
-static PyObject *py_lv_color_eq(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_eq_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c1_py; PyObject *c2_py;
-    if (!PyArg_ParseTuple(py_args, "OO", &c1_py, &c2_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t c1 = mp_write_lv_color_t(c1_py);
+    PyObject *c2_py;
+    if (!PyArg_ParseTuple(py_args, "O", &c2_py)) { PyGILState_Release(gstate); return NULL; }
+    lv_color_t c1 = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) c1 = *p_; }
     lv_color_t c2 = mp_write_lv_color_t(c2_py);
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
@@ -69607,9 +69602,9 @@ static PyObject *py_lv_color_eq(PyObject *self, PyObject *py_args, PyObject *py_
     return convert_to_bool(_res);
 }
 
-static PyMethodDef py_lv_color_eq_def = {
+static PyMethodDef py_lv_color_eq_struct_method_def = {
     "lv_color_eq",
-    (PyCFunction)py_lv_color_eq,
+    (PyCFunction)py_lv_color_eq_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69619,14 +69614,12 @@ static PyMethodDef py_lv_color_eq_def = {
  * lvgl extension definition for:
  * uint16_t lv_color_to_u16(lv_color_t color)
  */
-static PyObject *py_lv_color_to_u16(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_to_u16_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *color_py;
-    if (!PyArg_ParseTuple(py_args, "O", &color_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t color = mp_write_lv_color_t(color_py);
+
+    lv_color_t color = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) color = *p_; }
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     uint16_t _res;
@@ -69638,9 +69631,9 @@ static PyObject *py_lv_color_to_u16(PyObject *self, PyObject *py_args, PyObject 
     return mp_obj_new_int_from_uint(_res);
 }
 
-static PyMethodDef py_lv_color_to_u16_def = {
+static PyMethodDef py_lv_color_to_u16_struct_method_def = {
     "lv_color_to_u16",
-    (PyCFunction)py_lv_color_to_u16,
+    (PyCFunction)py_lv_color_to_u16_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69650,14 +69643,12 @@ static PyMethodDef py_lv_color_to_u16_def = {
  * lvgl extension definition for:
  * uint32_t lv_color_to_u32(lv_color_t color)
  */
-static PyObject *py_lv_color_to_u32(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_to_u32_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *color_py;
-    if (!PyArg_ParseTuple(py_args, "O", &color_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t color = mp_write_lv_color_t(color_py);
+
+    lv_color_t color = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) color = *p_; }
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     uint32_t _res;
@@ -69669,9 +69660,9 @@ static PyObject *py_lv_color_to_u32(PyObject *self, PyObject *py_args, PyObject 
     return mp_obj_new_int_from_uint(_res);
 }
 
-static PyMethodDef py_lv_color_to_u32_def = {
+static PyMethodDef py_lv_color_to_u32_struct_method_def = {
     "lv_color_to_u32",
-    (PyCFunction)py_lv_color_to_u32,
+    (PyCFunction)py_lv_color_to_u32_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69681,14 +69672,13 @@ static PyMethodDef py_lv_color_to_u32_def = {
  * lvgl extension definition for:
  * lv_color_t lv_color_lighten(lv_color_t c, lv_opa_t lvl)
  */
-static PyObject *py_lv_color_lighten(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_lighten_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c_py; long lvl_val;
-    if (!PyArg_ParseTuple(py_args, "Ol", &c_py, &lvl_val)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t c = mp_write_lv_color_t(c_py);
+    long lvl_val;
+    if (!PyArg_ParseTuple(py_args, "l", &lvl_val)) { PyGILState_Release(gstate); return NULL; }
+    lv_color_t c = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) c = *p_; }
     lv_opa_t lvl = (lv_opa_t)lvl_val;
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
@@ -69701,9 +69691,9 @@ static PyObject *py_lv_color_lighten(PyObject *self, PyObject *py_args, PyObject
     return mp_read_lv_color_t(_res);
 }
 
-static PyMethodDef py_lv_color_lighten_def = {
+static PyMethodDef py_lv_color_lighten_struct_method_def = {
     "lv_color_lighten",
-    (PyCFunction)py_lv_color_lighten,
+    (PyCFunction)py_lv_color_lighten_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69713,14 +69703,13 @@ static PyMethodDef py_lv_color_lighten_def = {
  * lvgl extension definition for:
  * lv_color_t lv_color_darken(lv_color_t c, lv_opa_t lvl)
  */
-static PyObject *py_lv_color_darken(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_darken_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c_py; long lvl_val;
-    if (!PyArg_ParseTuple(py_args, "Ol", &c_py, &lvl_val)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t c = mp_write_lv_color_t(c_py);
+    long lvl_val;
+    if (!PyArg_ParseTuple(py_args, "l", &lvl_val)) { PyGILState_Release(gstate); return NULL; }
+    lv_color_t c = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) c = *p_; }
     lv_opa_t lvl = (lv_opa_t)lvl_val;
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
@@ -69733,9 +69722,9 @@ static PyObject *py_lv_color_darken(PyObject *self, PyObject *py_args, PyObject 
     return mp_read_lv_color_t(_res);
 }
 
-static PyMethodDef py_lv_color_darken_def = {
+static PyMethodDef py_lv_color_darken_struct_method_def = {
     "lv_color_darken",
-    (PyCFunction)py_lv_color_darken,
+    (PyCFunction)py_lv_color_darken_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69745,14 +69734,12 @@ static PyMethodDef py_lv_color_darken_def = {
  * lvgl extension definition for:
  * lv_color_hsv_t lv_color_to_hsv(lv_color_t color)
  */
-static PyObject *py_lv_color_to_hsv(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_to_hsv_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *color_py;
-    if (!PyArg_ParseTuple(py_args, "O", &color_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t color = mp_write_lv_color_t(color_py);
+
+    lv_color_t color = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) color = *p_; }
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     lv_color_hsv_t _res;
@@ -69764,9 +69751,9 @@ static PyObject *py_lv_color_to_hsv(PyObject *self, PyObject *py_args, PyObject 
     return mp_read_lv_color_hsv_t(_res);
 }
 
-static PyMethodDef py_lv_color_to_hsv_def = {
+static PyMethodDef py_lv_color_to_hsv_struct_method_def = {
     "lv_color_to_hsv",
-    (PyCFunction)py_lv_color_to_hsv,
+    (PyCFunction)py_lv_color_to_hsv_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69776,14 +69763,12 @@ static PyMethodDef py_lv_color_to_hsv_def = {
  * lvgl extension definition for:
  * uint8_t lv_color_luminance(lv_color_t c)
  */
-static PyObject *py_lv_color_luminance(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_luminance_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c_py;
-    if (!PyArg_ParseTuple(py_args, "O", &c_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t c = mp_write_lv_color_t(c_py);
+
+    lv_color_t c = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) c = *p_; }
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     uint8_t _res;
@@ -69795,9 +69780,9 @@ static PyObject *py_lv_color_luminance(PyObject *self, PyObject *py_args, PyObje
     return mp_obj_new_int_from_uint(_res);
 }
 
-static PyMethodDef py_lv_color_luminance_def = {
+static PyMethodDef py_lv_color_luminance_struct_method_def = {
     "lv_color_luminance",
-    (PyCFunction)py_lv_color_luminance,
+    (PyCFunction)py_lv_color_luminance_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69807,14 +69792,13 @@ static PyMethodDef py_lv_color_luminance_def = {
  * lvgl extension definition for:
  * lv_color_t lv_color_mix(lv_color_t c1, lv_color_t c2, uint8_t mix)
  */
-static PyObject *py_lv_color_mix(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_mix_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c1_py; PyObject *c2_py; long mix_val;
-    if (!PyArg_ParseTuple(py_args, "OOl", &c1_py, &c2_py, &mix_val)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t c1 = mp_write_lv_color_t(c1_py);
+    PyObject *c2_py; long mix_val;
+    if (!PyArg_ParseTuple(py_args, "Ol", &c2_py, &mix_val)) { PyGILState_Release(gstate); return NULL; }
+    lv_color_t c1 = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) c1 = *p_; }
     lv_color_t c2 = mp_write_lv_color_t(c2_py);
     uint8_t mix = (uint8_t)mix_val;
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
@@ -69828,9 +69812,9 @@ static PyObject *py_lv_color_mix(PyObject *self, PyObject *py_args, PyObject *py
     return mp_read_lv_color_t(_res);
 }
 
-static PyMethodDef py_lv_color_mix_def = {
+static PyMethodDef py_lv_color_mix_struct_method_def = {
     "lv_color_mix",
-    (PyCFunction)py_lv_color_mix,
+    (PyCFunction)py_lv_color_mix_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -69840,14 +69824,12 @@ static PyMethodDef py_lv_color_mix_def = {
  * lvgl extension definition for:
  * uint8_t lv_color_brightness(lv_color_t c)
  */
-static PyObject *py_lv_color_brightness(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_brightness_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c_py;
-    if (!PyArg_ParseTuple(py_args, "O", &c_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color_t c = mp_write_lv_color_t(c_py);
+
+    lv_color_t c = {0}; { lv_color_t *p_ = (lv_color_t *)mp_write_ptr_lv_color_t(self); if (p_) c = *p_; }
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     uint8_t _res;
@@ -69859,14 +69841,30 @@ static PyObject *py_lv_color_brightness(PyObject *self, PyObject *py_args, PyObj
     return mp_obj_new_int_from_uint(_res);
 }
 
-static PyMethodDef py_lv_color_brightness_def = {
+static PyMethodDef py_lv_color_brightness_struct_method_def = {
     "lv_color_brightness",
-    (PyCFunction)py_lv_color_brightness,
+    (PyCFunction)py_lv_color_brightness_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
 
-PyMethodDef py_lv_color_t_methods[] = {{NULL}};
+
+PyMethodDef py_lv_color_t_methods[] = {
+    {"is_in_range", (PyCFunction)py_lv_color_is_in_range_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"to_32", (PyCFunction)py_lv_color_to_32_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"to_int", (PyCFunction)py_lv_color_to_int_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"eq", (PyCFunction)py_lv_color_eq_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"to_u16", (PyCFunction)py_lv_color_to_u16_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"to_u32", (PyCFunction)py_lv_color_to_u32_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"lighten", (PyCFunction)py_lv_color_lighten_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"darken", (PyCFunction)py_lv_color_darken_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"to_hsv", (PyCFunction)py_lv_color_to_hsv_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"luminance", (PyCFunction)py_lv_color_luminance_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"mix", (PyCFunction)py_lv_color_mix_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"brightness", (PyCFunction)py_lv_color_brightness_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {NULL}
+};
+
 
 /*
  * lvgl extension definition for:
@@ -75637,7 +75635,7 @@ static PyMethodDef py_lv_area_intersect_struct_method_def = {
  * lvgl extension definition for:
  * int8_t lv_area_diff(lv_area_t res_p[], const lv_area_t *a1_p, const lv_area_t *a2_p)
  */
-static PyObject *py_lv_area_diff(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_area_diff_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
     (void)self;
@@ -75658,9 +75656,9 @@ static PyObject *py_lv_area_diff(PyObject *self, PyObject *py_args, PyObject *py
     return mp_obj_new_int(_res);
 }
 
-static PyMethodDef py_lv_area_diff_def = {
+static PyMethodDef py_lv_area_diff_struct_method_def = {
     "lv_area_diff",
-    (PyCFunction)py_lv_area_diff,
+    (PyCFunction)py_lv_area_diff_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -75868,6 +75866,7 @@ PyMethodDef py_lv_area_t_methods[] = {
     {"align", (PyCFunction)py_lv_area_align_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
     {"set_pos", (PyCFunction)py_lv_area_set_pos_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
     {"intersect", (PyCFunction)py_lv_area_intersect_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"diff", (PyCFunction)py_lv_area_diff_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
     {"join", (PyCFunction)py_lv_area_join_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
     {"is_point_on", (PyCFunction)py_lv_area_is_point_on_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
     {"is_on", (PyCFunction)py_lv_area_is_on_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -77615,14 +77614,13 @@ PyMethodDef py_lv_draw_unit_t_methods[] = {{NULL}};
  * lvgl extension definition for:
  * bool lv_color32_eq(lv_color32_t c1, lv_color32_t c2)
  */
-static PyObject *py_lv_color32_eq(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color32_eq_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c1_py; PyObject *c2_py;
-    if (!PyArg_ParseTuple(py_args, "OO", &c1_py, &c2_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color32_t c1 = mp_write_lv_color32_t(c1_py);
+    PyObject *c2_py;
+    if (!PyArg_ParseTuple(py_args, "O", &c2_py)) { PyGILState_Release(gstate); return NULL; }
+    lv_color32_t c1 = {0}; { lv_color32_t *p_ = (lv_color32_t *)mp_write_ptr_lv_color32_t(self); if (p_) c1 = *p_; }
     lv_color32_t c2 = mp_write_lv_color32_t(c2_py);
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
@@ -77635,9 +77633,9 @@ static PyObject *py_lv_color32_eq(PyObject *self, PyObject *py_args, PyObject *p
     return convert_to_bool(_res);
 }
 
-static PyMethodDef py_lv_color32_eq_def = {
+static PyMethodDef py_lv_color32_eq_struct_method_def = {
     "lv_color32_eq",
-    (PyCFunction)py_lv_color32_eq,
+    (PyCFunction)py_lv_color32_eq_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -77675,14 +77673,12 @@ static PyMethodDef py_lv_color_premultiply_struct_method_def = {
  * lvgl extension definition for:
  * uint8_t lv_color32_luminance(lv_color32_t c)
  */
-static PyObject *py_lv_color32_luminance(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color32_luminance_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c_py;
-    if (!PyArg_ParseTuple(py_args, "O", &c_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color32_t c = mp_write_lv_color32_t(c_py);
+
+    lv_color32_t c = {0}; { lv_color32_t *p_ = (lv_color32_t *)mp_write_ptr_lv_color32_t(self); if (p_) c = *p_; }
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     uint8_t _res;
@@ -77694,9 +77690,9 @@ static PyObject *py_lv_color32_luminance(PyObject *self, PyObject *py_args, PyOb
     return mp_obj_new_int_from_uint(_res);
 }
 
-static PyMethodDef py_lv_color32_luminance_def = {
+static PyMethodDef py_lv_color32_luminance_struct_method_def = {
     "lv_color32_luminance",
-    (PyCFunction)py_lv_color32_luminance,
+    (PyCFunction)py_lv_color32_luminance_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -77706,14 +77702,13 @@ static PyMethodDef py_lv_color32_luminance_def = {
  * lvgl extension definition for:
  * lv_color32_t lv_color_mix32(lv_color32_t fg, lv_color32_t bg)
  */
-static PyObject *py_lv_color_mix32(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_mix32_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *fg_py; PyObject *bg_py;
-    if (!PyArg_ParseTuple(py_args, "OO", &fg_py, &bg_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color32_t fg = mp_write_lv_color32_t(fg_py);
+    PyObject *bg_py;
+    if (!PyArg_ParseTuple(py_args, "O", &bg_py)) { PyGILState_Release(gstate); return NULL; }
+    lv_color32_t fg = {0}; { lv_color32_t *p_ = (lv_color32_t *)mp_write_ptr_lv_color32_t(self); if (p_) fg = *p_; }
     lv_color32_t bg = mp_write_lv_color32_t(bg_py);
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
@@ -77726,9 +77721,9 @@ static PyObject *py_lv_color_mix32(PyObject *self, PyObject *py_args, PyObject *
     return mp_read_lv_color32_t(_res);
 }
 
-static PyMethodDef py_lv_color_mix32_def = {
+static PyMethodDef py_lv_color_mix32_struct_method_def = {
     "lv_color_mix32",
-    (PyCFunction)py_lv_color_mix32,
+    (PyCFunction)py_lv_color_mix32_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -77738,14 +77733,13 @@ static PyMethodDef py_lv_color_mix32_def = {
  * lvgl extension definition for:
  * lv_color32_t lv_color_mix32_premultiplied(lv_color32_t fg, lv_color32_t bg)
  */
-static PyObject *py_lv_color_mix32_premultiplied(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_mix32_premultiplied_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *fg_py; PyObject *bg_py;
-    if (!PyArg_ParseTuple(py_args, "OO", &fg_py, &bg_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color32_t fg = mp_write_lv_color32_t(fg_py);
+    PyObject *bg_py;
+    if (!PyArg_ParseTuple(py_args, "O", &bg_py)) { PyGILState_Release(gstate); return NULL; }
+    lv_color32_t fg = {0}; { lv_color32_t *p_ = (lv_color32_t *)mp_write_ptr_lv_color32_t(self); if (p_) fg = *p_; }
     lv_color32_t bg = mp_write_lv_color32_t(bg_py);
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
@@ -77758,9 +77752,9 @@ static PyObject *py_lv_color_mix32_premultiplied(PyObject *self, PyObject *py_ar
     return mp_read_lv_color32_t(_res);
 }
 
-static PyMethodDef py_lv_color_mix32_premultiplied_def = {
+static PyMethodDef py_lv_color_mix32_premultiplied_struct_method_def = {
     "lv_color_mix32_premultiplied",
-    (PyCFunction)py_lv_color_mix32_premultiplied,
+    (PyCFunction)py_lv_color_mix32_premultiplied_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -77770,14 +77764,13 @@ static PyMethodDef py_lv_color_mix32_premultiplied_def = {
  * lvgl extension definition for:
  * lv_color32_t lv_color_over32(lv_color32_t fg, lv_color32_t bg)
  */
-static PyObject *py_lv_color_over32(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color_over32_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *fg_py; PyObject *bg_py;
-    if (!PyArg_ParseTuple(py_args, "OO", &fg_py, &bg_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color32_t fg = mp_write_lv_color32_t(fg_py);
+    PyObject *bg_py;
+    if (!PyArg_ParseTuple(py_args, "O", &bg_py)) { PyGILState_Release(gstate); return NULL; }
+    lv_color32_t fg = {0}; { lv_color32_t *p_ = (lv_color32_t *)mp_write_ptr_lv_color32_t(self); if (p_) fg = *p_; }
     lv_color32_t bg = mp_write_lv_color32_t(bg_py);
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
@@ -77790,16 +77783,21 @@ static PyObject *py_lv_color_over32(PyObject *self, PyObject *py_args, PyObject 
     return mp_read_lv_color32_t(_res);
 }
 
-static PyMethodDef py_lv_color_over32_def = {
+static PyMethodDef py_lv_color_over32_struct_method_def = {
     "lv_color_over32",
-    (PyCFunction)py_lv_color_over32,
+    (PyCFunction)py_lv_color_over32_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
 
 
 PyMethodDef py_lv_color32_t_methods[] = {
+    {"eq", (PyCFunction)py_lv_color32_eq_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
     {"color_premultiply", (PyCFunction)py_lv_color_premultiply_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"luminance", (PyCFunction)py_lv_color32_luminance_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"color_mix32", (PyCFunction)py_lv_color_mix32_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"color_mix32_premultiplied", (PyCFunction)py_lv_color_mix32_premultiplied_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"color_over32", (PyCFunction)py_lv_color_over32_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
     {NULL}
 };
 
@@ -90474,14 +90472,12 @@ PyMethodDef py_lv_font_class_t_methods[] = {{NULL}};
  * lvgl extension definition for:
  * inline static lv_color_t lv_color16_to_color(lv_color16_t c)
  */
-static PyObject *py_lv_color16_to_color(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color16_to_color_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c_py;
-    if (!PyArg_ParseTuple(py_args, "O", &c_py)) { PyGILState_Release(gstate); return NULL; }
-    lv_color16_t c = mp_write_lv_color16_t(c_py);
+
+    lv_color16_t c = {0}; { lv_color16_t *p_ = (lv_color16_t *)mp_write_ptr_lv_color16_t(self); if (p_) c = *p_; }
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     lv_color_t _res;
@@ -90493,9 +90489,9 @@ static PyObject *py_lv_color16_to_color(PyObject *self, PyObject *py_args, PyObj
     return mp_read_lv_color_t(_res);
 }
 
-static PyMethodDef py_lv_color16_to_color_def = {
+static PyMethodDef py_lv_color16_to_color_struct_method_def = {
     "lv_color16_to_color",
-    (PyCFunction)py_lv_color16_to_color,
+    (PyCFunction)py_lv_color16_to_color_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
@@ -90535,14 +90531,12 @@ static PyMethodDef py_lv_color16_premultiply_struct_method_def = {
  * lvgl extension definition for:
  * uint8_t lv_color16_luminance(const lv_color16_t c)
  */
-static PyObject *py_lv_color16_luminance(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_color16_luminance_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *c_py;
-    if (!PyArg_ParseTuple(py_args, "O", &c_py)) { PyGILState_Release(gstate); return NULL; }
-    const lv_color16_t c = mp_write_lv_color16_t(c_py);
+
+    lv_color16_t c = {0}; { lv_color16_t *p_ = (lv_color16_t *)mp_write_ptr_lv_color16_t(self); if (p_) c = *p_; }
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     uint8_t _res;
@@ -90554,16 +90548,18 @@ static PyObject *py_lv_color16_luminance(PyObject *self, PyObject *py_args, PyOb
     return mp_obj_new_int_from_uint(_res);
 }
 
-static PyMethodDef py_lv_color16_luminance_def = {
+static PyMethodDef py_lv_color16_luminance_struct_method_def = {
     "lv_color16_luminance",
-    (PyCFunction)py_lv_color16_luminance,
+    (PyCFunction)py_lv_color16_luminance_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
 
 
 PyMethodDef py_lv_color16_t_methods[] = {
+    {"to_color", (PyCFunction)py_lv_color16_to_color_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
     {"premultiply", (PyCFunction)py_lv_color16_premultiply_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {"luminance", (PyCFunction)py_lv_color16_luminance_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
     {NULL}
 };
 
@@ -91902,15 +91898,14 @@ PyMethodDef py_lv_font_info_t_methods[] = {
  * lvgl extension definition for:
  * uint32_t lv_layout_create(lv_layout_callbacks_t callbacks, void *user_data)
  */
-static PyObject *py_lv_layout_create(PyObject *self, PyObject *py_args, PyObject *py_kwds)
+static PyObject *py_lv_layout_create_struct_method(PyObject *self, PyObject *py_args, PyObject *py_kwds)
 {
     PyGILState_STATE gstate = PyGILState_Ensure();
-    (void)self;
     (void)py_kwds;
-    PyObject *callbacks_py; PyObject *user_data_py;
-    if (!PyArg_ParseTuple(py_args, "OO", &callbacks_py, &user_data_py)) { PyGILState_Release(gstate); return NULL; }
+    PyObject *user_data_py;
+    if (!PyArg_ParseTuple(py_args, "O", &user_data_py)) { PyGILState_Release(gstate); return NULL; }
+    lv_layout_callbacks_t callbacks = {0}; { lv_layout_callbacks_t *p_ = (lv_layout_callbacks_t *)mp_write_ptr_lv_layout_callbacks_t(self); if (p_) callbacks = *p_; }
     void *user_data = mp_to_ptr(user_data_py);
-    lv_layout_callbacks_t callbacks = mp_write_lv_layout_callbacks_t(callbacks_py);
     if (PyErr_Occurred()) { PyGILState_Release(gstate); return NULL; }
     
     uint32_t _res;
@@ -91922,14 +91917,19 @@ static PyObject *py_lv_layout_create(PyObject *self, PyObject *py_args, PyObject
     return mp_obj_new_int_from_uint(_res);
 }
 
-static PyMethodDef py_lv_layout_create_def = {
+static PyMethodDef py_lv_layout_create_struct_method_def = {
     "lv_layout_create",
-    (PyCFunction)py_lv_layout_create,
+    (PyCFunction)py_lv_layout_create_struct_method,
     METH_VARARGS | METH_KEYWORDS,
     NULL
 };
 
-PyMethodDef py_lv_layout_callbacks_t_methods[] = {{NULL}};
+
+PyMethodDef py_lv_layout_callbacks_t_methods[] = {
+    {"create", (PyCFunction)py_lv_layout_create_struct_method, METH_VARARGS | METH_KEYWORDS, NULL},
+    {NULL}
+};
+
 
 /*
  * lvgl extension definition for:
@@ -94937,6 +94937,8 @@ PyMethodDef py_lv_color_hsv_t_methods[] = {{NULL}};
  * lv_array_front
  * lv_array_back
  * lv_area_copy
+ * lv_color_is_in_range
+ * lv_color16_to_color
  * lv_draw_buf_has_flag
  * lv_draw_buf_set_flag
  * lv_draw_buf_clear_flag
@@ -95086,9 +95088,26 @@ PyMethodDef py_lv_color_hsv_t_methods[] = {{NULL}};
  * lv_point_precise_set
  * lv_point_swap
  * lv_point_precise_swap
+ * lv_color_to_32
+ * lv_color_to_int
+ * lv_color_eq
+ * lv_color32_eq
+ * lv_color_to_u16
+ * lv_color_to_u32
+ * lv_color_lighten
+ * lv_color_darken
+ * lv_color_to_hsv
  * lv_color_premultiply
  * lv_color16_premultiply
+ * lv_color_luminance
+ * lv_color16_luminance
+ * lv_color32_luminance
+ * lv_color_mix
+ * lv_color_mix32
+ * lv_color_mix32_premultiplied
+ * lv_color_brightness
  * lv_color_filter_dsc_init
+ * lv_color_over32
  * lv_draw_buf_init_with_default_handlers
  * lv_draw_buf_handlers_init
  * lv_draw_buf_align_ex
@@ -95153,6 +95172,7 @@ PyMethodDef py_lv_color_hsv_t_methods[] = {{NULL}};
  * lv_grad_radial_init
  * lv_grad_radial_set_focal
  * lv_grad_conical_init
+ * lv_layout_create
  * lv_style_init
  * lv_style_reset
  * lv_style_copy
@@ -95658,6 +95678,7 @@ PyMethodDef py_lv_color_hsv_t_methods[] = {{NULL}};
  * lv_draw_image_tiled_helper
  * lv_area_set_pos
  * lv_area_intersect
+ * lv_area_diff
  * lv_area_join
  * lv_area_is_point_on
  * lv_area_is_on

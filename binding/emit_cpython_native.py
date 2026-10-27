@@ -1145,15 +1145,29 @@ def build_py_func_arg_line(arg, index, func, py_var):
     )
 
 
-def _is_struct_method(func, obj_name, get_type_fn):
+def _struct_receiver_kind(func, obj_name, get_type_fn):
+    """How a struct method takes its struct: "ptr", "array" (``T name[]``),
+    "value", or None when the first argument isn't the struct. MicroPython
+    binds all three as methods (lvgl-bindings#46)."""
     generated_structs = _h("generated_structs")
     if not obj_name or obj_name not in generated_structs:
-        return False
+        return None
     args = func.type.args.params if func.type.args else []
     if not args:
-        return False
-    first_type = get_type_fn(args[0].type, remove_quals=True)
-    return first_type in (obj_name + " *", "const " + obj_name + " *")
+        return None
+    first = args[0].type
+    first_type = get_type_fn(first, remove_quals=True)
+    if first_type in (obj_name + " *", "const " + obj_name + " *"):
+        return "array" if isinstance(first, c_ast.ArrayDecl) else "ptr"
+    if isinstance(first, c_ast.ArrayDecl):
+        return "array" if get_type_fn(first.type, remove_quals=True) == obj_name else None
+    if isinstance(first, c_ast.TypeDecl) and first_type == obj_name:
+        return "value"
+    return None
+
+
+def _is_struct_method(func, obj_name, get_type_fn):
+    return _struct_receiver_kind(func, obj_name, get_type_fn) is not None
 
 
 def gen_py_func(func, obj_name):
@@ -1276,13 +1290,22 @@ def gen_py_func(func, obj_name):
         if is_method and i == 0:
             if struct_method:
                 san = sanitize(obj_name)
-                body_items.append(
-                    (
-                        0,
-                        "%s = (%s *)mp_write_ptr_%s(self);"
-                        % (gen.visit(arg), obj_name, san),
+                kind = _struct_receiver_kind(func, obj_name, get_type_fn)
+                if kind == "value":
+                    # A wrong type leaves the zeroed value and an exception set,
+                    # which the PyErr_Occurred check after the arguments reports.
+                    line = (
+                        "%s %s = {0}; { %s *p_ = (%s *)mp_write_ptr_%s(self);"
+                        " if (p_) %s = *p_; }"
+                        % (obj_name, cname, obj_name, obj_name, san, cname)
                     )
-                )
+                elif kind == "array":
+                    line = "%s *%s = (%s *)mp_write_ptr_%s(self);" % (
+                        obj_name, cname, obj_name, san)
+                else:
+                    line = "%s = (%s *)mp_write_ptr_%s(self);" % (
+                        gen.visit(arg), obj_name, san)
+                body_items.append((0, line))
             else:
                 body_items.append(
                     (0, "lv_obj_t *%s = mp_to_lv(self);" % (cname or "obj"))
