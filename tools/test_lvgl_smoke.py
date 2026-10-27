@@ -625,6 +625,22 @@ def test_grad_helpers(lv):
     print("OK: gradient helpers by stub name; params reads and writes")
 
 
+def test_struct_dir(lv):
+    # dir() on a struct instance lists its fields and methods, so they can be
+    # discovered from the REPL (lvgl-bindings#40).
+    want = {
+        "grad_dsc_t": ("stops", "dir", "extend", "params", "linear_init"),
+        "draw_triangle_dsc_t": ("p", "color", "opa", "init"),
+        "area_t": ("x1", "y1", "x2", "y2", "get_width"),
+    }
+    for name, attrs in want.items():
+        listed = dir(_lv_export(lv, name)())
+        missing = [a for a in attrs if a not in listed]
+        if missing:
+            _fail("dir(%s()) is missing %r" % (name, missing))
+    print("OK: dir() on a struct lists its fields and methods")
+
+
 def test_struct_value_from_dict(lv):
     # A struct-by-value field takes a dict, as its type's constructor does, and
     # a wrong type raises instead of crashing CPython (lvgl-bindings#21).
@@ -723,6 +739,7 @@ def main():
         test_line_points_list_and_buffer(lv)
         test_struct_array_fields(lv)
         test_grad_helpers(lv)
+        test_struct_dir(lv)
         test_struct_value_from_dict(lv)
         test_event_callback(lv)
         test_callback_gc_with_widget_ref(lv)

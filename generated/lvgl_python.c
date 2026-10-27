@@ -221,6 +221,29 @@ static PySequenceMethods lvpy_struct_array_as_sequence = {
     .sq_ass_item = lvpy_struct_array_ass_item,
 };
 
+/* dir() on a struct instance: what object.__dir__ finds, plus the fields and
+ * methods the struct's getattro resolves by name (lvgl-bindings#40). */
+static inline PyObject *lvpy_struct_dir(PyObject *self, const char *const *fields,
+    PyMethodDef *methods)
+{
+    PyObject *names = PyObject_CallMethod((PyObject *)&PyBaseObject_Type, "__dir__", "O", self);
+    if (names == NULL) return NULL;
+    PyObject *list = PySequence_List(names);
+    Py_DECREF(names);
+    if (list == NULL) return NULL;
+    for (; *fields != NULL; fields++) {
+        PyObject *s = PyUnicode_FromString(*fields);
+        if (s == NULL || PyList_Append(list, s) < 0) { Py_XDECREF(s); Py_DECREF(list); return NULL; }
+        Py_DECREF(s);
+    }
+    for (; methods->ml_name != NULL; methods++) {
+        PyObject *s = PyUnicode_FromString(methods->ml_name);
+        if (s == NULL || PyList_Append(list, s) < 0) { Py_XDECREF(s); Py_DECREF(list); return NULL; }
+        Py_DECREF(s);
+    }
+    return list;
+}
+
 static PyTypeObject lvpy_struct_array_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "lvgl.StructArray",
@@ -7150,6 +7173,19 @@ static PyObject *py_lv_color_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_color_t_field_names[] = {"blue", "green", "red", NULL};
+
+static PyObject *py_lv_color_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_color_t_field_names, py_lv_color_t_methods);
+}
+
+static PyMethodDef py_lv_color_t_type_methods[] = {
+    {"__dir__", py_lv_color_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_color_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -7198,6 +7234,7 @@ PyTypeObject py_lv_color_t_type = {
     .tp_getattro = (getter)py_lv_color_t_getattro,
     .tp_setattro = (setter)py_lv_color_t_setattro,
     .tp_new = py_lv_color_t_new,
+    .tp_methods = py_lv_color_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -7581,6 +7618,19 @@ static PyObject *py_lv_grad_stop_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_grad_stop_t_field_names[] = {"color", "opa", "frac", NULL};
+
+static PyObject *py_lv_grad_stop_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_grad_stop_t_field_names, py_lv_grad_stop_t_methods);
+}
+
+static PyMethodDef py_lv_grad_stop_t_type_methods[] = {
+    {"__dir__", py_lv_grad_stop_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_grad_stop_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -7629,6 +7679,7 @@ PyTypeObject py_lv_grad_stop_t_type = {
     .tp_getattro = (getter)py_lv_grad_stop_t_getattro,
     .tp_setattro = (setter)py_lv_grad_stop_t_setattro,
     .tp_new = py_lv_grad_stop_t_new,
+    .tp_methods = py_lv_grad_stop_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -7703,6 +7754,19 @@ static PyObject *py_lv_point_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_point_t_field_names[] = {"x", "y", NULL};
+
+static PyObject *py_lv_point_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_point_t_field_names, py_lv_point_t_methods);
+}
+
+static PyMethodDef py_lv_point_t_type_methods[] = {
+    {"__dir__", py_lv_point_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_point_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -7750,6 +7814,7 @@ PyTypeObject py_lv_point_t_type = {
     .tp_getattro = (getter)py_lv_point_t_getattro,
     .tp_setattro = (setter)py_lv_point_t_setattro,
     .tp_new = py_lv_point_t_new,
+    .tp_methods = py_lv_point_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -7822,6 +7887,19 @@ static PyObject *py_lv_grad_dsc_params_linear_t_getattro(PyObject *self, PyObjec
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_grad_dsc_params_linear_t_field_names[] = {"start", "end", NULL};
+
+static PyObject *py_lv_grad_dsc_params_linear_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_grad_dsc_params_linear_t_field_names, py_lv_grad_dsc_params_linear_t_methods);
+}
+
+static PyMethodDef py_lv_grad_dsc_params_linear_t_type_methods[] = {
+    {"__dir__", py_lv_grad_dsc_params_linear_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_grad_dsc_params_linear_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -7869,6 +7947,7 @@ PyTypeObject py_lv_grad_dsc_params_linear_t_type = {
     .tp_getattro = (getter)py_lv_grad_dsc_params_linear_t_getattro,
     .tp_setattro = (setter)py_lv_grad_dsc_params_linear_t_setattro,
     .tp_new = py_lv_grad_dsc_params_linear_t_new,
+    .tp_methods = py_lv_grad_dsc_params_linear_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -7944,6 +8023,19 @@ static PyObject *py_lv_grad_dsc_params_radial_t_getattro(PyObject *self, PyObjec
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_grad_dsc_params_radial_t_field_names[] = {"focal", "focal_extent", "end", "end_extent", NULL};
+
+static PyObject *py_lv_grad_dsc_params_radial_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_grad_dsc_params_radial_t_field_names, py_lv_grad_dsc_params_radial_t_methods);
+}
+
+static PyMethodDef py_lv_grad_dsc_params_radial_t_type_methods[] = {
+    {"__dir__", py_lv_grad_dsc_params_radial_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_grad_dsc_params_radial_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -7993,6 +8085,7 @@ PyTypeObject py_lv_grad_dsc_params_radial_t_type = {
     .tp_getattro = (getter)py_lv_grad_dsc_params_radial_t_getattro,
     .tp_setattro = (setter)py_lv_grad_dsc_params_radial_t_setattro,
     .tp_new = py_lv_grad_dsc_params_radial_t_new,
+    .tp_methods = py_lv_grad_dsc_params_radial_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -8067,6 +8160,19 @@ static PyObject *py_lv_grad_dsc_params_conical_t_getattro(PyObject *self, PyObje
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_grad_dsc_params_conical_t_field_names[] = {"center", "start_angle", "end_angle", NULL};
+
+static PyObject *py_lv_grad_dsc_params_conical_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_grad_dsc_params_conical_t_field_names, py_lv_grad_dsc_params_conical_t_methods);
+}
+
+static PyMethodDef py_lv_grad_dsc_params_conical_t_type_methods[] = {
+    {"__dir__", py_lv_grad_dsc_params_conical_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_grad_dsc_params_conical_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -8115,6 +8221,7 @@ PyTypeObject py_lv_grad_dsc_params_conical_t_type = {
     .tp_getattro = (getter)py_lv_grad_dsc_params_conical_t_getattro,
     .tp_setattro = (setter)py_lv_grad_dsc_params_conical_t_setattro,
     .tp_new = py_lv_grad_dsc_params_conical_t_new,
+    .tp_methods = py_lv_grad_dsc_params_conical_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -8188,6 +8295,19 @@ static PyObject *py_lv_grad_dsc_params_t_getattro(PyObject *self, PyObject *name
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_grad_dsc_params_t_field_names[] = {"linear", "radial", "conical", NULL};
+
+static PyObject *py_lv_grad_dsc_params_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_grad_dsc_params_t_field_names, py_lv_grad_dsc_params_t_methods);
+}
+
+static PyMethodDef py_lv_grad_dsc_params_t_type_methods[] = {
+    {"__dir__", py_lv_grad_dsc_params_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_grad_dsc_params_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -8236,6 +8356,7 @@ PyTypeObject py_lv_grad_dsc_params_t_type = {
     .tp_getattro = (getter)py_lv_grad_dsc_params_t_getattro,
     .tp_setattro = (setter)py_lv_grad_dsc_params_t_setattro,
     .tp_new = py_lv_grad_dsc_params_t_new,
+    .tp_methods = py_lv_grad_dsc_params_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -8312,6 +8433,19 @@ static PyObject *py_lv_grad_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_grad_dsc_t_field_names[] = {"stops", "stops_count", "dir", "extend", "params", "state", NULL};
+
+static PyObject *py_lv_grad_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_grad_dsc_t_field_names, py_lv_grad_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_grad_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_grad_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_grad_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -8363,6 +8497,7 @@ PyTypeObject py_lv_grad_dsc_t_type = {
     .tp_getattro = (getter)py_lv_grad_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_grad_dsc_t_setattro,
     .tp_new = py_lv_grad_dsc_t_new,
+    .tp_methods = py_lv_grad_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -9334,6 +9469,19 @@ static PyObject *py_lv_image_colorkey_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_image_colorkey_t_field_names[] = {"low", "high", NULL};
+
+static PyObject *py_lv_image_colorkey_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_image_colorkey_t_field_names, py_lv_image_colorkey_t_methods);
+}
+
+static PyMethodDef py_lv_image_colorkey_t_type_methods[] = {
+    {"__dir__", py_lv_image_colorkey_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_image_colorkey_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -9381,6 +9529,7 @@ PyTypeObject py_lv_image_colorkey_t_type = {
     .tp_getattro = (getter)py_lv_image_colorkey_t_getattro,
     .tp_setattro = (setter)py_lv_image_colorkey_t_setattro,
     .tp_new = py_lv_image_colorkey_t_new,
+    .tp_methods = py_lv_image_colorkey_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -10012,6 +10161,19 @@ static PyObject *py_lv_font_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_font_t_field_names[] = {"get_glyph_dsc", "get_glyph_bitmap", "release_glyph", "line_height", "base_line", "subpx", "kerning", "static_bitmap", "underline_position", "underline_thickness", "dsc", "fallback", "user_data", NULL};
+
+static PyObject *py_lv_font_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_font_t_field_names, py_lv_font_t_methods);
+}
+
+static PyMethodDef py_lv_font_t_type_methods[] = {
+    {"__dir__", py_lv_font_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_font_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -10070,6 +10232,7 @@ PyTypeObject py_lv_font_t_type = {
     .tp_getattro = (getter)py_lv_font_t_getattro,
     .tp_setattro = (setter)py_lv_font_t_setattro,
     .tp_new = py_lv_font_t_new,
+    .tp_methods = py_lv_font_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -10891,6 +11054,19 @@ static PyObject *py_lv_color_filter_dsc_t_getattro(PyObject *self, PyObject *nam
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_color_filter_dsc_t_field_names[] = {"filter_cb", "user_data", NULL};
+
+static PyObject *py_lv_color_filter_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_color_filter_dsc_t_field_names, py_lv_color_filter_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_color_filter_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_color_filter_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_color_filter_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -10938,6 +11114,7 @@ PyTypeObject py_lv_color_filter_dsc_t_type = {
     .tp_getattro = (getter)py_lv_color_filter_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_color_filter_dsc_t_setattro,
     .tp_new = py_lv_color_filter_dsc_t_new,
+    .tp_methods = py_lv_color_filter_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -11166,6 +11343,19 @@ static PyObject *py_lv_anim_bezier3_para_t_getattro(PyObject *self, PyObject *na
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_anim_bezier3_para_t_field_names[] = {"x1", "y1", "x2", "y2", NULL};
+
+static PyObject *py_lv_anim_bezier3_para_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_anim_bezier3_para_t_field_names, py_lv_anim_bezier3_para_t_methods);
+}
+
+static PyMethodDef py_lv_anim_bezier3_para_t_type_methods[] = {
+    {"__dir__", py_lv_anim_bezier3_para_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_anim_bezier3_para_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -11215,6 +11405,7 @@ PyTypeObject py_lv_anim_bezier3_para_t_type = {
     .tp_getattro = (getter)py_lv_anim_bezier3_para_t_getattro,
     .tp_setattro = (setter)py_lv_anim_bezier3_para_t_setattro,
     .tp_new = py_lv_anim_bezier3_para_t_new,
+    .tp_methods = py_lv_anim_bezier3_para_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -11286,6 +11477,19 @@ static PyObject *py_lv_anim_parameter_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_anim_parameter_t_field_names[] = {"bezier3", NULL};
+
+static PyObject *py_lv_anim_parameter_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_anim_parameter_t_field_names, py_lv_anim_parameter_t_methods);
+}
+
+static PyMethodDef py_lv_anim_parameter_t_type_methods[] = {
+    {"__dir__", py_lv_anim_parameter_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_anim_parameter_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -11332,6 +11536,7 @@ PyTypeObject py_lv_anim_parameter_t_type = {
     .tp_getattro = (getter)py_lv_anim_parameter_t_getattro,
     .tp_setattro = (setter)py_lv_anim_parameter_t_setattro,
     .tp_new = py_lv_anim_parameter_t_new,
+    .tp_methods = py_lv_anim_parameter_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -11429,6 +11634,19 @@ static PyObject *py_lv_anim_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_anim_t_field_names[] = {"var", "exec_cb", "custom_exec_cb", "start_cb", "completed_cb", "deleted_cb", "get_value_cb", "user_data", "path_cb", "start_value", "current_value", "end_value", "duration", "act_time", "reverse_delay", "reverse_duration", "repeat_delay", "repeat_cnt", "parameter", "last_timer_run", "pause_time", "pause_duration", "is_paused", "reverse_play_in_progress", "run_round", "start_cb_called", "early_apply", NULL};
+
+static PyObject *py_lv_anim_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_anim_t_field_names, py_lv_anim_t_methods);
+}
+
+static PyMethodDef py_lv_anim_t_type_methods[] = {
+    {"__dir__", py_lv_anim_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_anim_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -11501,6 +11719,7 @@ PyTypeObject py_lv_anim_t_type = {
     .tp_getattro = (getter)py_lv_anim_t_getattro,
     .tp_setattro = (setter)py_lv_anim_t_setattro,
     .tp_new = py_lv_anim_t_new,
+    .tp_methods = py_lv_anim_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -11645,6 +11864,19 @@ static PyObject *py_lv_style_transition_dsc_t_getattro(PyObject *self, PyObject 
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_style_transition_dsc_t_field_names[] = {"props", "user_data", "path_xcb", "time", "delay", NULL};
+
+static PyObject *py_lv_style_transition_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_style_transition_dsc_t_field_names, py_lv_style_transition_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_style_transition_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_style_transition_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_style_transition_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -11695,6 +11927,7 @@ PyTypeObject py_lv_style_transition_dsc_t_type = {
     .tp_getattro = (getter)py_lv_style_transition_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_style_transition_dsc_t_setattro,
     .tp_new = py_lv_style_transition_dsc_t_new,
+    .tp_methods = py_lv_style_transition_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -13397,6 +13630,19 @@ static PyObject *py_lv_image_header_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_image_header_t_field_names[] = {"magic", "cf", "flags", "w", "h", "stride", "reserved_2", NULL};
+
+static PyObject *py_lv_image_header_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_image_header_t_field_names, py_lv_image_header_t_methods);
+}
+
+static PyMethodDef py_lv_image_header_t_type_methods[] = {
+    {"__dir__", py_lv_image_header_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_image_header_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -13449,6 +13695,7 @@ PyTypeObject py_lv_image_header_t_type = {
     .tp_getattro = (getter)py_lv_image_header_t_getattro,
     .tp_setattro = (setter)py_lv_image_header_t_setattro,
     .tp_new = py_lv_image_header_t_new,
+    .tp_methods = py_lv_image_header_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -13599,6 +13846,19 @@ static PyObject *py_lv_draw_buf_handlers_t_getattro(PyObject *self, PyObject *na
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_buf_handlers_t_field_names[] = {"buf_malloc_cb", "buf_free_cb", "buf_copy_cb", "align_pointer_cb", "invalidate_cache_cb", "flush_cache_cb", "width_to_stride_cb", NULL};
+
+static PyObject *py_lv_draw_buf_handlers_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_buf_handlers_t_field_names, py_lv_draw_buf_handlers_t_methods);
+}
+
+static PyMethodDef py_lv_draw_buf_handlers_t_type_methods[] = {
+    {"__dir__", py_lv_draw_buf_handlers_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_buf_handlers_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -13651,6 +13911,7 @@ PyTypeObject py_lv_draw_buf_handlers_t_type = {
     .tp_getattro = (getter)py_lv_draw_buf_handlers_t_getattro,
     .tp_setattro = (setter)py_lv_draw_buf_handlers_t_setattro,
     .tp_new = py_lv_draw_buf_handlers_t_new,
+    .tp_methods = py_lv_draw_buf_handlers_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -13726,6 +13987,19 @@ static PyObject *py_lv_draw_buf_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_buf_t_field_names[] = {"header", "data_size", "data", "unaligned_data", "handlers", NULL};
+
+static PyObject *py_lv_draw_buf_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_buf_t_field_names, py_lv_draw_buf_t_methods);
+}
+
+static PyMethodDef py_lv_draw_buf_t_type_methods[] = {
+    {"__dir__", py_lv_draw_buf_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_buf_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -13776,6 +14050,7 @@ PyTypeObject py_lv_draw_buf_t_type = {
     .tp_getattro = (getter)py_lv_draw_buf_t_getattro,
     .tp_setattro = (setter)py_lv_draw_buf_t_setattro,
     .tp_new = py_lv_draw_buf_t_new,
+    .tp_methods = py_lv_draw_buf_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -13860,6 +14135,19 @@ static PyObject *py_lv_area_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_area_t_field_names[] = {"x1", "y1", "x2", "y2", NULL};
+
+static PyObject *py_lv_area_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_area_t_field_names, py_lv_area_t_methods);
+}
+
+static PyMethodDef py_lv_area_t_type_methods[] = {
+    {"__dir__", py_lv_area_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_area_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -13909,6 +14197,7 @@ PyTypeObject py_lv_area_t_type = {
     .tp_getattro = (getter)py_lv_area_t_getattro,
     .tp_setattro = (setter)py_lv_area_t_setattro,
     .tp_new = py_lv_area_t_new,
+    .tp_methods = py_lv_area_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -13982,6 +14271,19 @@ static PyObject *py_lv_ll_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_ll_t_field_names[] = {"n_size", "head", "tail", NULL};
+
+static PyObject *py_lv_ll_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_ll_t_field_names, py_lv_ll_t_methods);
+}
+
+static PyMethodDef py_lv_ll_t_type_methods[] = {
+    {"__dir__", py_lv_ll_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_ll_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -14030,6 +14332,7 @@ PyTypeObject py_lv_ll_t_type = {
     .tp_getattro = (getter)py_lv_ll_t_getattro,
     .tp_setattro = (setter)py_lv_ll_t_setattro,
     .tp_new = py_lv_ll_t_new,
+    .tp_methods = py_lv_ll_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -14159,6 +14462,19 @@ static PyObject *py_lv_draw_unit_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_unit_t_field_names[] = {"next", "name", "idx", "dispatch_cb", "evaluate_cb", "wait_for_finish_cb", "delete_cb", "event_cb", NULL};
+
+static PyObject *py_lv_draw_unit_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_unit_t_field_names, py_lv_draw_unit_t_methods);
+}
+
+static PyMethodDef py_lv_draw_unit_t_type_methods[] = {
+    {"__dir__", py_lv_draw_unit_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_unit_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -14212,6 +14528,7 @@ PyTypeObject py_lv_draw_unit_t_type = {
     .tp_getattro = (getter)py_lv_draw_unit_t_getattro,
     .tp_setattro = (setter)py_lv_draw_unit_t_setattro,
     .tp_new = py_lv_draw_unit_t_new,
+    .tp_methods = py_lv_draw_unit_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -14295,6 +14612,19 @@ static PyObject *py_lv_draw_task_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_task_t_field_names[] = {"next", "type", "area", "_real_area", "clip_area_original", "clip_area", "target_layer", "draw_unit", "state", "draw_dsc", "opa", "preferred_draw_unit_id", "preference_score", NULL};
+
+static PyObject *py_lv_draw_task_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_task_t_field_names, py_lv_draw_task_t_methods);
+}
+
+static PyMethodDef py_lv_draw_task_t_type_methods[] = {
+    {"__dir__", py_lv_draw_task_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_task_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -14353,6 +14683,7 @@ PyTypeObject py_lv_draw_task_t_type = {
     .tp_getattro = (getter)py_lv_draw_task_t_getattro,
     .tp_setattro = (setter)py_lv_draw_task_t_setattro,
     .tp_new = py_lv_draw_task_t_new,
+    .tp_methods = py_lv_draw_task_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -14427,6 +14758,19 @@ static PyObject *py_lv_color32_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_color32_t_field_names[] = {"blue", "green", "red", "alpha", NULL};
+
+static PyObject *py_lv_color32_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_color32_t_field_names, py_lv_color32_t_methods);
+}
+
+static PyMethodDef py_lv_color32_t_type_methods[] = {
+    {"__dir__", py_lv_color32_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_color32_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -14476,6 +14820,7 @@ PyTypeObject py_lv_color32_t_type = {
     .tp_getattro = (getter)py_lv_color32_t_getattro,
     .tp_setattro = (setter)py_lv_color32_t_setattro,
     .tp_new = py_lv_color32_t_new,
+    .tp_methods = py_lv_color32_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -14559,6 +14904,19 @@ static PyObject *py_lv_layer_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_layer_t_field_names[] = {"draw_buf", "draw_task_head", "parent", "next", "user_data", "buf_area", "phy_clip_area", "_clip_area", "partial_y_offset", "recolor", "color_format", "all_tasks_added", "opa", NULL};
+
+static PyObject *py_lv_layer_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_layer_t_field_names, py_lv_layer_t_methods);
+}
+
+static PyMethodDef py_lv_layer_t_type_methods[] = {
+    {"__dir__", py_lv_layer_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_layer_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -14617,6 +14975,7 @@ PyTypeObject py_lv_layer_t_type = {
     .tp_getattro = (getter)py_lv_layer_t_getattro,
     .tp_setattro = (setter)py_lv_layer_t_setattro,
     .tp_new = py_lv_layer_t_new,
+    .tp_methods = py_lv_layer_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -14698,6 +15057,19 @@ static PyObject *py_lv_array_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_array_t_field_names[] = {"data", "size", "capacity", "element_size", "inner_alloc", NULL};
+
+static PyObject *py_lv_array_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_array_t_field_names, py_lv_array_t_methods);
+}
+
+static PyMethodDef py_lv_array_t_type_methods[] = {
+    {"__dir__", py_lv_array_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_array_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -14748,6 +15120,7 @@ PyTypeObject py_lv_array_t_type = {
     .tp_getattro = (getter)py_lv_array_t_getattro,
     .tp_setattro = (setter)py_lv_array_t_setattro,
     .tp_new = py_lv_array_t_new,
+    .tp_methods = py_lv_array_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -14821,6 +15194,19 @@ static PyObject *py_lv_event_list_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_event_list_t_field_names[] = {"array", "is_traversing", "has_marked_deleting", NULL};
+
+static PyObject *py_lv_event_list_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_event_list_t_field_names, py_lv_event_list_t_methods);
+}
+
+static PyMethodDef py_lv_event_list_t_type_methods[] = {
+    {"__dir__", py_lv_event_list_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_event_list_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -14869,6 +15255,7 @@ PyTypeObject py_lv_event_list_t_type = {
     .tp_getattro = (getter)py_lv_event_list_t_getattro,
     .tp_setattro = (setter)py_lv_event_list_t_setattro,
     .tp_new = py_lv_event_list_t_new,
+    .tp_methods = py_lv_event_list_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -14954,6 +15341,19 @@ static PyObject *py_lv_theme_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_theme_t_field_names[] = {"apply_cb", "parent", "user_data", "disp", "color_primary", "color_secondary", "font_small", "font_normal", "font_large", "flags", NULL};
+
+static PyObject *py_lv_theme_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_theme_t_field_names, py_lv_theme_t_methods);
+}
+
+static PyMethodDef py_lv_theme_t_type_methods[] = {
+    {"__dir__", py_lv_theme_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_theme_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -15009,6 +15409,7 @@ PyTypeObject py_lv_theme_t_type = {
     .tp_getattro = (getter)py_lv_theme_t_getattro,
     .tp_setattro = (setter)py_lv_theme_t_setattro,
     .tp_new = py_lv_theme_t_new,
+    .tp_methods = py_lv_theme_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -15091,6 +15492,19 @@ static PyObject *py_lv_timer_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_timer_t_field_names[] = {"period", "last_run", "timer_cb", "user_data", "repeat_count", "paused", "auto_delete", NULL};
+
+static PyObject *py_lv_timer_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_timer_t_field_names, py_lv_timer_t_methods);
+}
+
+static PyMethodDef py_lv_timer_t_type_methods[] = {
+    {"__dir__", py_lv_timer_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_timer_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -15143,6 +15557,7 @@ PyTypeObject py_lv_timer_t_type = {
     .tp_getattro = (getter)py_lv_timer_t_getattro,
     .tp_setattro = (setter)py_lv_timer_t_setattro,
     .tp_new = py_lv_timer_t_new,
+    .tp_methods = py_lv_timer_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -15266,6 +15681,19 @@ static PyObject *py_lv_display_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_display_t_field_names[] = {"hor_res", "ver_res", "physical_hor_res", "physical_ver_res", "offset_x", "offset_y", "dpi", "buf_1", "buf_2", "buf_3", "buf_act", "flush_cb", "flush_wait_cb", "flushing", "flushing_last", "last_area", "last_part", "render_mode", "antialiasing", "tile_cnt", "stride_is_auto", "rendering_in_progress", "color_format", "inv_areas", "inv_area_joined", "inv_p", "inv_en_cnt", "sync_areas", "_static_buf1", "_static_buf2", "layer_head", "layer_init", "layer_deinit", "screens", "sys_layer", "top_layer", "act_scr", "bottom_layer", "prev_scr", "scr_to_load", "screen_cnt", "draw_prev_over_act", "del_prev", "driver_data", "user_data", "event_list", "rotation", "matrix_rotation", "theme", "refr_timer", "last_activity_time", "refreshed_area", "vsync_count", NULL};
+
+static PyObject *py_lv_display_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_display_t_field_names, py_lv_display_t_methods);
+}
+
+static PyMethodDef py_lv_display_t_type_methods[] = {
+    {"__dir__", py_lv_display_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_display_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -15364,6 +15792,7 @@ PyTypeObject py_lv_display_t_type = {
     .tp_getattro = (getter)py_lv_display_t_getattro,
     .tp_setattro = (setter)py_lv_display_t_setattro,
     .tp_new = py_lv_display_t_new,
+    .tp_methods = py_lv_display_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -15546,6 +15975,19 @@ static PyObject *py_lv_obj_class_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_obj_class_t_field_names[] = {"base_class", "constructor_cb", "destructor_cb", "event_cb", "user_data", "name", "width_def", "height_def", "editable", "group_def", "instance_size", "theme_inheritable", NULL};
+
+static PyObject *py_lv_obj_class_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_obj_class_t_field_names, py_lv_obj_class_t_methods);
+}
+
+static PyMethodDef py_lv_obj_class_t_type_methods[] = {
+    {"__dir__", py_lv_obj_class_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_obj_class_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -15603,6 +16045,7 @@ PyTypeObject py_lv_obj_class_t_type = {
     .tp_getattro = (getter)py_lv_obj_class_t_getattro,
     .tp_setattro = (setter)py_lv_obj_class_t_setattro,
     .tp_new = py_lv_obj_class_t_new,
+    .tp_methods = py_lv_obj_class_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -16492,6 +16935,19 @@ static PyObject *py_lv_matrix_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_matrix_t_field_names[] = {NULL};
+
+static PyObject *py_lv_matrix_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_matrix_t_field_names, py_lv_matrix_t_methods);
+}
+
+static PyMethodDef py_lv_matrix_t_type_methods[] = {
+    {"__dir__", py_lv_matrix_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_matrix_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -16537,6 +16993,7 @@ PyTypeObject py_lv_matrix_t_type = {
     .tp_getattro = (getter)py_lv_matrix_t_getattro,
     .tp_setattro = (setter)py_lv_matrix_t_setattro,
     .tp_new = py_lv_matrix_t_new,
+    .tp_methods = py_lv_matrix_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -18579,6 +19036,19 @@ static PyObject *py_lv_style_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_style_t_field_names[] = {"values_and_props", "has_group", "prop_cnt", NULL};
+
+static PyObject *py_lv_style_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_style_t_field_names, py_lv_style_t_methods);
+}
+
+static PyMethodDef py_lv_style_t_type_methods[] = {
+    {"__dir__", py_lv_style_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_style_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -18627,6 +19097,7 @@ PyTypeObject py_lv_style_t_type = {
     .tp_getattro = (getter)py_lv_style_t_getattro,
     .tp_setattro = (setter)py_lv_style_t_setattro,
     .tp_new = py_lv_style_t_new,
+    .tp_methods = py_lv_style_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -19008,6 +19479,19 @@ static PyObject *py_lv_style_value_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_style_value_t_field_names[] = {"num", "ptr", "color", NULL};
+
+static PyObject *py_lv_style_value_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_style_value_t_field_names, py_lv_style_value_t_methods);
+}
+
+static PyMethodDef py_lv_style_value_t_type_methods[] = {
+    {"__dir__", py_lv_style_value_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_style_value_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -19056,6 +19540,7 @@ PyTypeObject py_lv_style_value_t_type = {
     .tp_getattro = (getter)py_lv_style_value_t_getattro,
     .tp_setattro = (setter)py_lv_style_value_t_setattro,
     .tp_new = py_lv_style_value_t_new,
+    .tp_methods = py_lv_style_value_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -23479,6 +23964,19 @@ static PyObject *py_lv_subject_value_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_subject_value_t_field_names[] = {"num", "pointer", "color", "float_v", NULL};
+
+static PyObject *py_lv_subject_value_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_subject_value_t_field_names, py_lv_subject_value_t_methods);
+}
+
+static PyMethodDef py_lv_subject_value_t_type_methods[] = {
+    {"__dir__", py_lv_subject_value_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_subject_value_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -23528,6 +24026,7 @@ PyTypeObject py_lv_subject_value_t_type = {
     .tp_getattro = (getter)py_lv_subject_value_t_getattro,
     .tp_setattro = (setter)py_lv_subject_value_t_setattro,
     .tp_new = py_lv_subject_value_t_new,
+    .tp_methods = py_lv_subject_value_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -23607,6 +24106,19 @@ static PyObject *py_lv_subject_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_subject_t_field_names[] = {"subs_ll", "value", "prev_value", "min_value", "max_value", "user_data", "type", "size", "notify_restart_query", NULL};
+
+static PyObject *py_lv_subject_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_subject_t_field_names, py_lv_subject_t_methods);
+}
+
+static PyMethodDef py_lv_subject_t_type_methods[] = {
+    {"__dir__", py_lv_subject_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_subject_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -23661,6 +24173,7 @@ PyTypeObject py_lv_subject_t_type = {
     .tp_getattro = (getter)py_lv_subject_t_getattro,
     .tp_setattro = (setter)py_lv_subject_t_setattro,
     .tp_new = py_lv_subject_t_new,
+    .tp_methods = py_lv_subject_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -23743,6 +24256,19 @@ static PyObject *py_lv_observer_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_observer_t_field_names[] = {"subject", "cb", "target", "user_data", "auto_free_user_data", "notified", "for_obj", NULL};
+
+static PyObject *py_lv_observer_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_observer_t_field_names, py_lv_observer_t_methods);
+}
+
+static PyMethodDef py_lv_observer_t_type_methods[] = {
+    {"__dir__", py_lv_observer_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_observer_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -23795,6 +24321,7 @@ PyTypeObject py_lv_observer_t_type = {
     .tp_getattro = (getter)py_lv_observer_t_getattro,
     .tp_setattro = (setter)py_lv_observer_t_setattro,
     .tp_new = py_lv_observer_t_new,
+    .tp_methods = py_lv_observer_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -23945,6 +24472,19 @@ static PyObject *py_lv_draw_dsc_base_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_dsc_base_t_field_names[] = {"obj", "part", "id1", "id2", "layer", "drop_shadow_ofs_x", "drop_shadow_ofs_y", "drop_shadow_color", "drop_shadow_opa", "drop_shadow_blur_radius", "drop_shadow_quality", "dsc_size", "user_data", NULL};
+
+static PyObject *py_lv_draw_dsc_base_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_dsc_base_t_field_names, py_lv_draw_dsc_base_t_methods);
+}
+
+static PyMethodDef py_lv_draw_dsc_base_t_type_methods[] = {
+    {"__dir__", py_lv_draw_dsc_base_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_dsc_base_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -24003,6 +24543,7 @@ PyTypeObject py_lv_draw_dsc_base_t_type = {
     .tp_getattro = (getter)py_lv_draw_dsc_base_t_getattro,
     .tp_setattro = (setter)py_lv_draw_dsc_base_t_setattro,
     .tp_new = py_lv_draw_dsc_base_t_new,
+    .tp_methods = py_lv_draw_dsc_base_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -24100,6 +24641,19 @@ static PyObject *py_lv_draw_rect_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_rect_dsc_t_field_names[] = {"base", "radius", "bg_image_src", "bg_image_symbol_font", "bg_image_recolor", "bg_image_opa", "bg_image_recolor_opa", "bg_image_tiled", "bg_opa", "border_opa", "outline_opa", "shadow_opa", "bg_color", "bg_grad", "bg_image_colorkey", "border_color", "border_width", "border_side", "border_post", "outline_color", "outline_width", "outline_pad", "shadow_color", "shadow_width", "shadow_offset_x", "shadow_offset_y", "shadow_spread", NULL};
+
+static PyObject *py_lv_draw_rect_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_rect_dsc_t_field_names, py_lv_draw_rect_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_rect_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_rect_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_rect_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -24172,6 +24726,7 @@ PyTypeObject py_lv_draw_rect_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_rect_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_rect_dsc_t_setattro,
     .tp_new = py_lv_draw_rect_dsc_t_new,
+    .tp_methods = py_lv_draw_rect_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -24276,6 +24831,19 @@ static PyObject *py_lv_draw_label_hint_t_getattro(PyObject *self, PyObject *name
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_label_hint_t_field_names[] = {"line_start", "y", "coord_y", NULL};
+
+static PyObject *py_lv_draw_label_hint_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_label_hint_t_field_names, py_lv_draw_label_hint_t_methods);
+}
+
+static PyMethodDef py_lv_draw_label_hint_t_type_methods[] = {
+    {"__dir__", py_lv_draw_label_hint_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_label_hint_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -24324,6 +24892,7 @@ PyTypeObject py_lv_draw_label_hint_t_type = {
     .tp_getattro = (getter)py_lv_draw_label_hint_t_getattro,
     .tp_setattro = (setter)py_lv_draw_label_hint_t_setattro,
     .tp_new = py_lv_draw_label_hint_t_new,
+    .tp_methods = py_lv_draw_label_hint_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -24421,6 +24990,19 @@ static PyObject *py_lv_draw_label_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_label_dsc_t_field_names[] = {"base", "text", "text_size", "font", "color", "line_space", "letter_space", "ofs_x", "ofs_y", "rotation", "sel_start", "sel_end", "sel_color", "sel_bg_color", "text_length", "align", "bidi_dir", "opa", "outline_stroke_opa", "decor", "flag", "text_local", "text_static", "has_bided", "hint", "outline_stroke_color", "outline_stroke_width", NULL};
+
+static PyObject *py_lv_draw_label_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_label_dsc_t_field_names, py_lv_draw_label_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_label_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_label_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_label_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -24493,6 +25075,7 @@ PyTypeObject py_lv_draw_label_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_label_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_label_dsc_t_setattro,
     .tp_new = py_lv_draw_label_dsc_t_new,
+    .tp_methods = py_lv_draw_label_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -24597,6 +25180,19 @@ static PyObject *py_lv_draw_image_sup_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_image_sup_t_field_names[] = {"alpha_color", "palette", "palette_size", NULL};
+
+static PyObject *py_lv_draw_image_sup_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_image_sup_t_field_names, py_lv_draw_image_sup_t_methods);
+}
+
+static PyMethodDef py_lv_draw_image_sup_t_type_methods[] = {
+    {"__dir__", py_lv_draw_image_sup_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_image_sup_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -24645,6 +25241,7 @@ PyTypeObject py_lv_draw_image_sup_t_type = {
     .tp_getattro = (getter)py_lv_draw_image_sup_t_getattro,
     .tp_setattro = (setter)py_lv_draw_image_sup_t_setattro,
     .tp_new = py_lv_draw_image_sup_t_new,
+    .tp_methods = py_lv_draw_image_sup_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -24720,6 +25317,19 @@ static PyObject *py_lv_image_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_image_dsc_t_field_names[] = {"header", "data_size", "data", "reserved", "reserved_2", NULL};
+
+static PyObject *py_lv_image_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_image_dsc_t_field_names, py_lv_image_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_image_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_image_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_image_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -24770,6 +25380,7 @@ PyTypeObject py_lv_image_dsc_t_type = {
     .tp_getattro = (getter)py_lv_image_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_image_dsc_t_setattro,
     .tp_new = py_lv_image_dsc_t_new,
+    .tp_methods = py_lv_image_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -24860,6 +25471,19 @@ static PyObject *py_lv_draw_image_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_image_dsc_t_field_names[] = {"base", "src", "header", "clip_radius", "rotation", "scale_x", "scale_y", "skew_x", "skew_y", "pivot", "recolor", "recolor_opa", "opa", "blend_mode", "antialias", "tile", "colorkey", "sup", "image_area", "bitmap_mask_src", NULL};
+
+static PyObject *py_lv_draw_image_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_image_dsc_t_field_names, py_lv_draw_image_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_image_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_image_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_image_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -24925,6 +25549,7 @@ PyTypeObject py_lv_draw_image_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_image_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_image_dsc_t_setattro,
     .tp_new = py_lv_draw_image_dsc_t_new,
+    .tp_methods = py_lv_draw_image_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -25028,6 +25653,19 @@ static PyObject *py_lv_point_precise_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_point_precise_t_field_names[] = {"x", "y", NULL};
+
+static PyObject *py_lv_point_precise_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_point_precise_t_field_names, py_lv_point_precise_t_methods);
+}
+
+static PyMethodDef py_lv_point_precise_t_type_methods[] = {
+    {"__dir__", py_lv_point_precise_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_point_precise_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -25075,6 +25713,7 @@ PyTypeObject py_lv_point_precise_t_type = {
     .tp_getattro = (getter)py_lv_point_precise_t_getattro,
     .tp_setattro = (setter)py_lv_point_precise_t_setattro,
     .tp_new = py_lv_point_precise_t_new,
+    .tp_methods = py_lv_point_precise_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -25158,6 +25797,19 @@ static PyObject *py_lv_draw_line_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_line_dsc_t_field_names[] = {"base", "p1", "p2", "points", "point_cnt", "color", "width", "dash_width", "dash_gap", "opa", "round_start", "round_end", "raw_end", NULL};
+
+static PyObject *py_lv_draw_line_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_line_dsc_t_field_names, py_lv_draw_line_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_line_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_line_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_line_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -25216,6 +25868,7 @@ PyTypeObject py_lv_draw_line_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_line_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_line_dsc_t_setattro,
     .tp_new = py_lv_draw_line_dsc_t_new,
+    .tp_methods = py_lv_draw_line_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -25327,6 +25980,19 @@ static PyObject *py_lv_draw_arc_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_arc_dsc_t_field_names[] = {"base", "color", "width", "start_angle", "end_angle", "center", "img_src", "radius", "opa", "rounded", NULL};
+
+static PyObject *py_lv_draw_arc_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_arc_dsc_t_field_names, py_lv_draw_arc_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_arc_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_arc_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_arc_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -25382,6 +26048,7 @@ PyTypeObject py_lv_draw_arc_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_arc_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_arc_dsc_t_setattro,
     .tp_new = py_lv_draw_arc_dsc_t_new,
+    .tp_methods = py_lv_draw_arc_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -25487,6 +26154,19 @@ static PyObject *py_lv_draw_blur_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_blur_dsc_t_field_names[] = {"base", "blur_radius", "corner_radius", "quality", NULL};
+
+static PyObject *py_lv_draw_blur_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_blur_dsc_t_field_names, py_lv_draw_blur_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_blur_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_blur_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_blur_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -25536,6 +26216,7 @@ PyTypeObject py_lv_draw_blur_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_blur_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_blur_dsc_t_setattro,
     .tp_new = py_lv_draw_blur_dsc_t_new,
+    .tp_methods = py_lv_draw_blur_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -25855,6 +26536,19 @@ static PyObject *py_lv_event_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_event_t_field_names[] = {"current_target", "original_target", "code", "user_data", "param", "prev", "deleted", "stop_processing", "stop_bubbling", "stop_trickling", NULL};
+
+static PyObject *py_lv_event_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_event_t_field_names, py_lv_event_t_methods);
+}
+
+static PyMethodDef py_lv_event_t_type_methods[] = {
+    {"__dir__", py_lv_event_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_event_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -25910,6 +26604,7 @@ PyTypeObject py_lv_event_t_type = {
     .tp_getattro = (getter)py_lv_event_t_getattro,
     .tp_setattro = (setter)py_lv_event_t_setattro,
     .tp_new = py_lv_event_t_new,
+    .tp_methods = py_lv_event_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -26025,6 +26720,19 @@ static PyObject *py_lv_event_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_event_dsc_t_field_names[] = {"cb", "user_data", "filter", NULL};
+
+static PyObject *py_lv_event_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_event_dsc_t_field_names, py_lv_event_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_event_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_event_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_event_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -26073,6 +26781,7 @@ PyTypeObject py_lv_event_dsc_t_type = {
     .tp_getattro = (getter)py_lv_event_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_event_dsc_t_setattro,
     .tp_new = py_lv_event_dsc_t_new,
+    .tp_methods = py_lv_event_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -26867,6 +27576,19 @@ static PyObject *py_lv_group_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_group_t_field_names[] = {"obj_ll", "obj_focus", "focus_cb", "edge_cb", "user_data", "frozen", "editing", "refocus_policy", "wrap", NULL};
+
+static PyObject *py_lv_group_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_group_t_field_names, py_lv_group_t_methods);
+}
+
+static PyMethodDef py_lv_group_t_type_methods[] = {
+    {"__dir__", py_lv_group_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_group_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -26921,6 +27643,7 @@ PyTypeObject py_lv_group_t_type = {
     .tp_getattro = (getter)py_lv_group_t_getattro,
     .tp_setattro = (setter)py_lv_group_t_setattro,
     .tp_new = py_lv_group_t_new,
+    .tp_methods = py_lv_group_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -27306,6 +28029,19 @@ static PyObject *py_lv_anim_timeline_dsc_t_getattro(PyObject *self, PyObject *na
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_anim_timeline_dsc_t_field_names[] = {"anim", "start_time", "is_started", "is_completed", NULL};
+
+static PyObject *py_lv_anim_timeline_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_anim_timeline_dsc_t_field_names, py_lv_anim_timeline_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_anim_timeline_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_anim_timeline_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_anim_timeline_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -27355,6 +28091,7 @@ PyTypeObject py_lv_anim_timeline_dsc_t_type = {
     .tp_getattro = (getter)py_lv_anim_timeline_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_anim_timeline_dsc_t_setattro,
     .tp_new = py_lv_anim_timeline_dsc_t_new,
+    .tp_methods = py_lv_anim_timeline_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -27433,6 +28170,19 @@ static PyObject *py_lv_anim_timeline_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_anim_timeline_t_field_names[] = {"anim_dsc", "anim_dsc_cnt", "act_time", "reverse", "delay", "repeat_count", "repeat_delay", "user_data", NULL};
+
+static PyObject *py_lv_anim_timeline_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_anim_timeline_t_field_names, py_lv_anim_timeline_t_methods);
+}
+
+static PyMethodDef py_lv_anim_timeline_t_type_methods[] = {
+    {"__dir__", py_lv_anim_timeline_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_anim_timeline_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -27486,6 +28236,7 @@ PyTypeObject py_lv_anim_timeline_t_type = {
     .tp_getattro = (getter)py_lv_anim_timeline_t_getattro,
     .tp_setattro = (setter)py_lv_anim_timeline_t_setattro,
     .tp_new = py_lv_anim_timeline_t_new,
+    .tp_methods = py_lv_anim_timeline_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -27655,6 +28406,19 @@ static PyObject *py_lv_subject_increment_dsc_t_getattro(PyObject *self, PyObject
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_subject_increment_dsc_t_field_names[] = {"subject", "step", "rollover", "min_value", "max_value", NULL};
+
+static PyObject *py_lv_subject_increment_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_subject_increment_dsc_t_field_names, py_lv_subject_increment_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_subject_increment_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_subject_increment_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_subject_increment_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -27705,6 +28469,7 @@ PyTypeObject py_lv_subject_increment_dsc_t_type = {
     .tp_getattro = (getter)py_lv_subject_increment_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_subject_increment_dsc_t_setattro,
     .tp_new = py_lv_subject_increment_dsc_t_new,
+    .tp_methods = py_lv_subject_increment_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -28557,6 +29322,19 @@ static PyObject *py_lv_obj_style_transition_dsc_t_getattro(PyObject *self, PyObj
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_obj_style_transition_dsc_t_field_names[] = {"time", "delay", "selector", "prop", "path_cb", "user_data", NULL};
+
+static PyObject *py_lv_obj_style_transition_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_obj_style_transition_dsc_t_field_names, py_lv_obj_style_transition_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_obj_style_transition_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_obj_style_transition_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_obj_style_transition_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -28608,6 +29386,7 @@ PyTypeObject py_lv_obj_style_transition_dsc_t_type = {
     .tp_getattro = (getter)py_lv_obj_style_transition_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_obj_style_transition_dsc_t_setattro,
     .tp_new = py_lv_obj_style_transition_dsc_t_new,
+    .tp_methods = py_lv_obj_style_transition_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -29561,6 +30340,19 @@ static PyObject *py_lv_image_decoder_args_t_getattro(PyObject *self, PyObject *n
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_image_decoder_args_t_field_names[] = {"stride_align", "premultiply", "no_cache", "use_indexed", "flush_cache", NULL};
+
+static PyObject *py_lv_image_decoder_args_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_image_decoder_args_t_field_names, py_lv_image_decoder_args_t_methods);
+}
+
+static PyMethodDef py_lv_image_decoder_args_t_type_methods[] = {
+    {"__dir__", py_lv_image_decoder_args_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_image_decoder_args_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -29611,6 +30403,7 @@ PyTypeObject py_lv_image_decoder_args_t_type = {
     .tp_getattro = (getter)py_lv_image_decoder_args_t_getattro,
     .tp_setattro = (setter)py_lv_image_decoder_args_t_setattro,
     .tp_new = py_lv_image_decoder_args_t_new,
+    .tp_methods = py_lv_image_decoder_args_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -29811,6 +30604,19 @@ static PyObject *py_lv_image_decoder_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_image_decoder_t_field_names[] = {"info_cb", "open_cb", "get_area_cb", "close_cb", "custom_draw_cb", "name", "user_data", NULL};
+
+static PyObject *py_lv_image_decoder_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_image_decoder_t_field_names, py_lv_image_decoder_t_methods);
+}
+
+static PyMethodDef py_lv_image_decoder_t_type_methods[] = {
+    {"__dir__", py_lv_image_decoder_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_image_decoder_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -29863,6 +30669,7 @@ PyTypeObject py_lv_image_decoder_t_type = {
     .tp_getattro = (getter)py_lv_image_decoder_t_getattro,
     .tp_setattro = (setter)py_lv_image_decoder_t_setattro,
     .tp_new = py_lv_image_decoder_t_new,
+    .tp_methods = py_lv_image_decoder_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -30089,6 +30896,19 @@ static PyObject *py_lv_fs_drv_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_fs_drv_t_field_names[] = {"letter", "cache_size", "ready_cb", "remove_cb", "open_cb", "close_cb", "read_cb", "write_cb", "seek_cb", "tell_cb", "dir_open_cb", "dir_read_cb", "dir_close_cb", "user_data", NULL};
+
+static PyObject *py_lv_fs_drv_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_fs_drv_t_field_names, py_lv_fs_drv_t_methods);
+}
+
+static PyMethodDef py_lv_fs_drv_t_type_methods[] = {
+    {"__dir__", py_lv_fs_drv_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_fs_drv_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -30148,6 +30968,7 @@ PyTypeObject py_lv_fs_drv_t_type = {
     .tp_getattro = (getter)py_lv_fs_drv_t_getattro,
     .tp_setattro = (setter)py_lv_fs_drv_t_setattro,
     .tp_new = py_lv_fs_drv_t_new,
+    .tp_methods = py_lv_fs_drv_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -30222,6 +31043,19 @@ static PyObject *py_lv_fs_file_cache_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_fs_file_cache_t_field_names[] = {"start", "end", "file_position", "buffer", NULL};
+
+static PyObject *py_lv_fs_file_cache_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_fs_file_cache_t_field_names, py_lv_fs_file_cache_t_methods);
+}
+
+static PyMethodDef py_lv_fs_file_cache_t_type_methods[] = {
+    {"__dir__", py_lv_fs_file_cache_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_fs_file_cache_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -30271,6 +31105,7 @@ PyTypeObject py_lv_fs_file_cache_t_type = {
     .tp_getattro = (getter)py_lv_fs_file_cache_t_getattro,
     .tp_setattro = (setter)py_lv_fs_file_cache_t_setattro,
     .tp_new = py_lv_fs_file_cache_t_new,
+    .tp_methods = py_lv_fs_file_cache_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -30344,6 +31179,19 @@ static PyObject *py_lv_fs_file_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_fs_file_t_field_names[] = {"file_d", "drv", "cache", NULL};
+
+static PyObject *py_lv_fs_file_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_fs_file_t_field_names, py_lv_fs_file_t_methods);
+}
+
+static PyMethodDef py_lv_fs_file_t_type_methods[] = {
+    {"__dir__", py_lv_fs_file_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_fs_file_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -30392,6 +31240,7 @@ PyTypeObject py_lv_fs_file_t_type = {
     .tp_getattro = (getter)py_lv_fs_file_t_getattro,
     .tp_setattro = (setter)py_lv_fs_file_t_setattro,
     .tp_new = py_lv_fs_file_t_new,
+    .tp_methods = py_lv_fs_file_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -30586,6 +31435,19 @@ static PyObject *py_lv_cache_class_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_cache_class_t_field_names[] = {"alloc_cb", "init_cb", "destroy_cb", "get_cb", "add_cb", "remove_cb", "drop_cb", "drop_all_cb", "get_victim_cb", "reserve_cond_cb", "iter_create_cb", NULL};
+
+static PyObject *py_lv_cache_class_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_cache_class_t_field_names, py_lv_cache_class_t_methods);
+}
+
+static PyMethodDef py_lv_cache_class_t_type_methods[] = {
+    {"__dir__", py_lv_cache_class_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_cache_class_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -30642,6 +31504,7 @@ PyTypeObject py_lv_cache_class_t_type = {
     .tp_getattro = (getter)py_lv_cache_class_t_getattro,
     .tp_setattro = (setter)py_lv_cache_class_t_setattro,
     .tp_new = py_lv_cache_class_t_new,
+    .tp_methods = py_lv_cache_class_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -30748,6 +31611,19 @@ static PyObject *py_lv_cache_ops_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_cache_ops_t_field_names[] = {"compare_cb", "create_cb", "free_cb", NULL};
+
+static PyObject *py_lv_cache_ops_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_cache_ops_t_field_names, py_lv_cache_ops_t_methods);
+}
+
+static PyMethodDef py_lv_cache_ops_t_type_methods[] = {
+    {"__dir__", py_lv_cache_ops_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_cache_ops_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -30796,6 +31672,7 @@ PyTypeObject py_lv_cache_ops_t_type = {
     .tp_getattro = (getter)py_lv_cache_ops_t_getattro,
     .tp_setattro = (setter)py_lv_cache_ops_t_setattro,
     .tp_new = py_lv_cache_ops_t_new,
+    .tp_methods = py_lv_cache_ops_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -30873,6 +31750,19 @@ static PyObject *py_lv_cache_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_cache_t_field_names[] = {"clz", "node_size", "max_size", "size", "ops", "lock", "name", NULL};
+
+static PyObject *py_lv_cache_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_cache_t_field_names, py_lv_cache_t_methods);
+}
+
+static PyMethodDef py_lv_cache_t_type_methods[] = {
+    {"__dir__", py_lv_cache_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_cache_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -30925,6 +31815,7 @@ PyTypeObject py_lv_cache_t_type = {
     .tp_getattro = (getter)py_lv_cache_t_getattro,
     .tp_setattro = (setter)py_lv_cache_t_setattro,
     .tp_new = py_lv_cache_t_new,
+    .tp_methods = py_lv_cache_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -30999,6 +31890,19 @@ static PyObject *py_lv_cache_entry_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_cache_entry_t_field_names[] = {"cache", "ref_cnt", "node_size", "flags", NULL};
+
+static PyObject *py_lv_cache_entry_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_cache_entry_t_field_names, py_lv_cache_entry_t_methods);
+}
+
+static PyMethodDef py_lv_cache_entry_t_type_methods[] = {
+    {"__dir__", py_lv_cache_entry_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_cache_entry_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -31048,6 +31952,7 @@ PyTypeObject py_lv_cache_entry_t_type = {
     .tp_getattro = (getter)py_lv_cache_entry_t_getattro,
     .tp_setattro = (setter)py_lv_cache_entry_t_setattro,
     .tp_new = py_lv_cache_entry_t_new,
+    .tp_methods = py_lv_cache_entry_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -31132,6 +32037,19 @@ static PyObject *py_lv_image_decoder_dsc_t_getattro(PyObject *self, PyObject *na
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_image_decoder_dsc_t_field_names[] = {"decoder", "args", "src", "src_type", "file", "header", "decoded", "palette", "palette_size", "time_to_open", "error_msg", "cache", "cache_entry", "user_data", NULL};
+
+static PyObject *py_lv_image_decoder_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_image_decoder_dsc_t_field_names, py_lv_image_decoder_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_image_decoder_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_image_decoder_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_image_decoder_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -31191,6 +32109,7 @@ PyTypeObject py_lv_image_decoder_dsc_t_type = {
     .tp_getattro = (getter)py_lv_image_decoder_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_image_decoder_dsc_t_setattro,
     .tp_new = py_lv_image_decoder_dsc_t_new,
+    .tp_methods = py_lv_image_decoder_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -31526,6 +32445,19 @@ static PyObject *py_lv_cache_slot_size_t_getattro(PyObject *self, PyObject *name
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_cache_slot_size_t_field_names[] = {"size", NULL};
+
+static PyObject *py_lv_cache_slot_size_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_cache_slot_size_t_field_names, py_lv_cache_slot_size_t_methods);
+}
+
+static PyMethodDef py_lv_cache_slot_size_t_type_methods[] = {
+    {"__dir__", py_lv_cache_slot_size_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_cache_slot_size_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -31572,6 +32504,7 @@ PyTypeObject py_lv_cache_slot_size_t_type = {
     .tp_getattro = (getter)py_lv_cache_slot_size_t_getattro,
     .tp_setattro = (setter)py_lv_cache_slot_size_t_setattro,
     .tp_new = py_lv_cache_slot_size_t_new,
+    .tp_methods = py_lv_cache_slot_size_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -31648,6 +32581,19 @@ static PyObject *py_lv_image_cache_data_t_getattro(PyObject *self, PyObject *nam
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_image_cache_data_t_field_names[] = {"slot", "src", "src_type", "decoded", "decoder", "user_data", NULL};
+
+static PyObject *py_lv_image_cache_data_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_image_cache_data_t_field_names, py_lv_image_cache_data_t_methods);
+}
+
+static PyMethodDef py_lv_image_cache_data_t_type_methods[] = {
+    {"__dir__", py_lv_image_cache_data_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_image_cache_data_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -31699,6 +32645,7 @@ PyTypeObject py_lv_image_cache_data_t_type = {
     .tp_getattro = (getter)py_lv_image_cache_data_t_getattro,
     .tp_setattro = (setter)py_lv_image_cache_data_t_setattro,
     .tp_new = py_lv_image_cache_data_t_new,
+    .tp_methods = py_lv_image_cache_data_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -32904,6 +33851,19 @@ static PyObject *py_lv_iter_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_iter_t_field_names[] = {NULL};
+
+static PyObject *py_lv_iter_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_iter_t_field_names, py_lv_iter_t_methods);
+}
+
+static PyMethodDef py_lv_iter_t_type_methods[] = {
+    {"__dir__", py_lv_iter_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_iter_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -32949,6 +33909,7 @@ PyTypeObject py_lv_iter_t_type = {
     .tp_getattro = (getter)py_lv_iter_t_getattro,
     .tp_setattro = (setter)py_lv_iter_t_setattro,
     .tp_new = py_lv_iter_t_new,
+    .tp_methods = py_lv_iter_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -37768,6 +38729,19 @@ static PyObject *py_lv_calendar_date_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_calendar_date_t_field_names[] = {"year", "month", "day", NULL};
+
+static PyObject *py_lv_calendar_date_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_calendar_date_t_field_names, py_lv_calendar_date_t_methods);
+}
+
+static PyMethodDef py_lv_calendar_date_t_type_methods[] = {
+    {"__dir__", py_lv_calendar_date_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_calendar_date_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -37816,6 +38790,7 @@ PyTypeObject py_lv_calendar_date_t_type = {
     .tp_getattro = (getter)py_lv_calendar_date_t_getattro,
     .tp_setattro = (setter)py_lv_calendar_date_t_setattro,
     .tp_new = py_lv_calendar_date_t_new,
+    .tp_methods = py_lv_calendar_date_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -39226,6 +40201,19 @@ static PyObject *py_lv_chart_series_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_chart_series_t_field_names[] = {"x_points", "y_points", "color", "start_point", "hidden", "x_ext_buf_assigned", "y_ext_buf_assigned", "x_axis_sec", "y_axis_sec", NULL};
+
+static PyObject *py_lv_chart_series_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_chart_series_t_field_names, py_lv_chart_series_t_methods);
+}
+
+static PyMethodDef py_lv_chart_series_t_type_methods[] = {
+    {"__dir__", py_lv_chart_series_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_chart_series_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -39280,6 +40268,7 @@ PyTypeObject py_lv_chart_series_t_type = {
     .tp_getattro = (getter)py_lv_chart_series_t_getattro,
     .tp_setattro = (setter)py_lv_chart_series_t_setattro,
     .tp_new = py_lv_chart_series_t_new,
+    .tp_methods = py_lv_chart_series_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -39664,6 +40653,19 @@ static PyObject *py_lv_chart_cursor_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_chart_cursor_t_field_names[] = {"pos", "point_id", "color", "ser", "dir", "pos_set", NULL};
+
+static PyObject *py_lv_chart_cursor_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_chart_cursor_t_field_names, py_lv_chart_cursor_t_methods);
+}
+
+static PyMethodDef py_lv_chart_cursor_t_type_methods[] = {
+    {"__dir__", py_lv_chart_cursor_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_chart_cursor_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -39715,6 +40717,7 @@ PyTypeObject py_lv_chart_cursor_t_type = {
     .tp_getattro = (getter)py_lv_chart_cursor_t_getattro,
     .tp_setattro = (setter)py_lv_chart_cursor_t_setattro,
     .tp_new = py_lv_chart_cursor_t_new,
+    .tp_methods = py_lv_chart_cursor_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -45621,6 +46624,19 @@ static PyObject *py_lv_scale_section_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_scale_section_t_field_names[] = {"main_style", "indicator_style", "items_style", "range_min", "range_max", "first_tick_idx_in_section", "last_tick_idx_in_section", "first_tick_in_section_width", "last_tick_in_section_width", "first_tick_in_section", "last_tick_in_section", "first_tick_idx_is_major", "last_tick_idx_is_major", NULL};
+
+static PyObject *py_lv_scale_section_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_scale_section_t_field_names, py_lv_scale_section_t_methods);
+}
+
+static PyMethodDef py_lv_scale_section_t_type_methods[] = {
+    {"__dir__", py_lv_scale_section_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_scale_section_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -45679,6 +46695,7 @@ PyTypeObject py_lv_scale_section_t_type = {
     .tp_getattro = (getter)py_lv_scale_section_t_getattro,
     .tp_setattro = (setter)py_lv_scale_section_t_setattro,
     .tp_new = py_lv_scale_section_t_new,
+    .tp_methods = py_lv_scale_section_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -47005,6 +48022,19 @@ static PyObject *py_lv_span_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_span_t_field_names[] = {"txt", "style", "static_flag", "trailing_pos", "trailing_height", NULL};
+
+static PyObject *py_lv_span_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_span_t_field_names, py_lv_span_t_methods);
+}
+
+static PyMethodDef py_lv_span_t_type_methods[] = {
+    {"__dir__", py_lv_span_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_span_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -47055,6 +48085,7 @@ PyTypeObject py_lv_span_t_type = {
     .tp_getattro = (getter)py_lv_span_t_getattro,
     .tp_setattro = (setter)py_lv_span_t_setattro,
     .tp_new = py_lv_span_t_new,
+    .tp_methods = py_lv_span_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -47726,6 +48757,19 @@ static PyObject *py_lv_span_coords_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_span_coords_t_field_names[] = {"heading", "middle", "trailing", NULL};
+
+static PyObject *py_lv_span_coords_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_span_coords_t_field_names, py_lv_span_coords_t_methods);
+}
+
+static PyMethodDef py_lv_span_coords_t_type_methods[] = {
+    {"__dir__", py_lv_span_coords_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_span_coords_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -47774,6 +48818,7 @@ PyTypeObject py_lv_span_coords_t_type = {
     .tp_getattro = (getter)py_lv_span_coords_t_getattro,
     .tp_setattro = (setter)py_lv_span_coords_t_setattro,
     .tp_new = py_lv_span_coords_t_new,
+    .tp_methods = py_lv_span_coords_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -52516,6 +53561,19 @@ static PyObject *py_lv_tree_class_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_tree_class_t_field_names[] = {"base_class", "instance_size", "constructor_cb", "destructor_cb", NULL};
+
+static PyObject *py_lv_tree_class_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_tree_class_t_field_names, py_lv_tree_class_t_methods);
+}
+
+static PyMethodDef py_lv_tree_class_t_type_methods[] = {
+    {"__dir__", py_lv_tree_class_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_tree_class_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -52565,6 +53623,7 @@ PyTypeObject py_lv_tree_class_t_type = {
     .tp_getattro = (getter)py_lv_tree_class_t_getattro,
     .tp_setattro = (setter)py_lv_tree_class_t_setattro,
     .tp_new = py_lv_tree_class_t_new,
+    .tp_methods = py_lv_tree_class_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -52683,6 +53742,19 @@ static PyObject *py_lv_font_class_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_font_class_t_field_names[] = {"create_cb", "delete_cb", "dup_src_cb", "free_src_cb", NULL};
+
+static PyObject *py_lv_font_class_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_font_class_t_field_names, py_lv_font_class_t_methods);
+}
+
+static PyMethodDef py_lv_font_class_t_type_methods[] = {
+    {"__dir__", py_lv_font_class_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_font_class_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -52732,6 +53804,7 @@ PyTypeObject py_lv_font_class_t_type = {
     .tp_getattro = (getter)py_lv_font_class_t_getattro,
     .tp_setattro = (setter)py_lv_font_class_t_setattro,
     .tp_new = py_lv_font_class_t_new,
+    .tp_methods = py_lv_font_class_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -52805,6 +53878,19 @@ static PyObject *py_lv_color16_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_color16_t_field_names[] = {"blue", "green", "red", NULL};
+
+static PyObject *py_lv_color16_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_color16_t_field_names, py_lv_color16_t_methods);
+}
+
+static PyMethodDef py_lv_color16_t_type_methods[] = {
+    {"__dir__", py_lv_color16_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_color16_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -52853,6 +53939,7 @@ PyTypeObject py_lv_color16_t_type = {
     .tp_getattro = (getter)py_lv_color16_t_getattro,
     .tp_setattro = (setter)py_lv_color16_t_setattro,
     .tp_new = py_lv_color16_t_new,
+    .tp_methods = py_lv_color16_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -52931,6 +54018,19 @@ static PyObject *py_lv_mem_monitor_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_mem_monitor_t_field_names[] = {"total_size", "free_cnt", "free_size", "free_biggest_size", "used_cnt", "max_used", "used_pct", "frag_pct", NULL};
+
+static PyObject *py_lv_mem_monitor_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_mem_monitor_t_field_names, py_lv_mem_monitor_t_methods);
+}
+
+static PyMethodDef py_lv_mem_monitor_t_type_methods[] = {
+    {"__dir__", py_lv_mem_monitor_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_mem_monitor_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -52984,6 +54084,7 @@ PyTypeObject py_lv_mem_monitor_t_type = {
     .tp_getattro = (getter)py_lv_mem_monitor_t_getattro,
     .tp_setattro = (setter)py_lv_mem_monitor_t_setattro,
     .tp_new = py_lv_mem_monitor_t_new,
+    .tp_methods = py_lv_mem_monitor_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -53075,6 +54176,19 @@ static PyObject *py_lv_rb_node_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_rb_node_t_field_names[] = {"parent", "left", "right", "color", "data", NULL};
+
+static PyObject *py_lv_rb_node_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_rb_node_t_field_names, py_lv_rb_node_t_methods);
+}
+
+static PyMethodDef py_lv_rb_node_t_type_methods[] = {
+    {"__dir__", py_lv_rb_node_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_rb_node_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -53125,6 +54239,7 @@ PyTypeObject py_lv_rb_node_t_type = {
     .tp_getattro = (getter)py_lv_rb_node_t_getattro,
     .tp_setattro = (setter)py_lv_rb_node_t_setattro,
     .tp_new = py_lv_rb_node_t_new,
+    .tp_methods = py_lv_rb_node_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -53209,6 +54324,19 @@ static PyObject *py_lv_rb_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_rb_t_field_names[] = {"root", "compare", "size", NULL};
+
+static PyObject *py_lv_rb_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_rb_t_field_names, py_lv_rb_t_methods);
+}
+
+static PyMethodDef py_lv_rb_t_type_methods[] = {
+    {"__dir__", py_lv_rb_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_rb_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -53257,6 +54385,7 @@ PyTypeObject py_lv_rb_t_type = {
     .tp_getattro = (getter)py_lv_rb_t_getattro,
     .tp_setattro = (setter)py_lv_rb_t_setattro,
     .tp_new = py_lv_rb_t_new,
+    .tp_methods = py_lv_rb_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -53328,6 +54457,19 @@ static PyObject *py_lv_circle_buf_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_circle_buf_t_field_names[] = {NULL};
+
+static PyObject *py_lv_circle_buf_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_circle_buf_t_field_names, py_lv_circle_buf_t_methods);
+}
+
+static PyMethodDef py_lv_circle_buf_t_type_methods[] = {
+    {"__dir__", py_lv_circle_buf_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_circle_buf_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -53373,6 +54515,7 @@ PyTypeObject py_lv_circle_buf_t_type = {
     .tp_getattro = (getter)py_lv_circle_buf_t_getattro,
     .tp_setattro = (setter)py_lv_circle_buf_t_setattro,
     .tp_new = py_lv_circle_buf_t_new,
+    .tp_methods = py_lv_circle_buf_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -53427,6 +54570,19 @@ static PyObject *py_lv_tree_node_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_tree_node_t_field_names[] = {"parent", "children", "child_cnt", "child_cap", "class_p", NULL};
+
+static PyObject *py_lv_tree_node_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_tree_node_t_field_names, py_lv_tree_node_t_methods);
+}
+
+static PyMethodDef py_lv_tree_node_t_type_methods[] = {
+    {"__dir__", py_lv_tree_node_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_tree_node_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -53477,6 +54633,7 @@ PyTypeObject py_lv_tree_node_t_type = {
     .tp_getattro = (getter)py_lv_tree_node_t_getattro,
     .tp_setattro = (setter)py_lv_tree_node_t_setattro,
     .tp_new = py_lv_tree_node_t_new,
+    .tp_methods = py_lv_tree_node_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -53550,6 +54707,19 @@ static PyObject *py_lv_font_glyph_dsc_gid_t_getattro(PyObject *self, PyObject *n
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_font_glyph_dsc_gid_t_field_names[] = {"index", "src", NULL};
+
+static PyObject *py_lv_font_glyph_dsc_gid_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_font_glyph_dsc_gid_t_field_names, py_lv_font_glyph_dsc_gid_t_methods);
+}
+
+static PyMethodDef py_lv_font_glyph_dsc_gid_t_type_methods[] = {
+    {"__dir__", py_lv_font_glyph_dsc_gid_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_font_glyph_dsc_gid_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -53597,6 +54767,7 @@ PyTypeObject py_lv_font_glyph_dsc_gid_t_type = {
     .tp_getattro = (getter)py_lv_font_glyph_dsc_gid_t_getattro,
     .tp_setattro = (setter)py_lv_font_glyph_dsc_gid_t_setattro,
     .tp_new = py_lv_font_glyph_dsc_gid_t_new,
+    .tp_methods = py_lv_font_glyph_dsc_gid_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -53680,6 +54851,19 @@ static PyObject *py_lv_font_glyph_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_font_glyph_dsc_t_field_names[] = {"resolved_font", "adv_w", "box_w", "box_h", "ofs_x", "ofs_y", "stride", "format", "is_placeholder", "req_raw_bitmap", "outline_stroke_width", "gid", "entry", NULL};
+
+static PyObject *py_lv_font_glyph_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_font_glyph_dsc_t_field_names, py_lv_font_glyph_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_font_glyph_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_font_glyph_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_font_glyph_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -53738,6 +54922,7 @@ PyTypeObject py_lv_font_glyph_dsc_t_type = {
     .tp_getattro = (getter)py_lv_font_glyph_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_font_glyph_dsc_t_setattro,
     .tp_new = py_lv_font_glyph_dsc_t_new,
+    .tp_methods = py_lv_font_glyph_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -53814,6 +54999,19 @@ static PyObject *py_lv_font_info_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_font_info_t_field_names[] = {"name", "class_p", "size", "render_mode", "style", "kerning", NULL};
+
+static PyObject *py_lv_font_info_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_font_info_t_field_names, py_lv_font_info_t_methods);
+}
+
+static PyMethodDef py_lv_font_info_t_type_methods[] = {
+    {"__dir__", py_lv_font_info_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_font_info_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -53865,6 +55063,7 @@ PyTypeObject py_lv_font_info_t_type = {
     .tp_getattro = (getter)py_lv_font_info_t_getattro,
     .tp_setattro = (setter)py_lv_font_info_t_setattro,
     .tp_new = py_lv_font_info_t_new,
+    .tp_methods = py_lv_font_info_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -53959,6 +55158,19 @@ static PyObject *py_lv_layout_callbacks_t_getattro(PyObject *self, PyObject *nam
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_layout_callbacks_t_field_names[] = {"layout_update_cb", "get_min_size_cb", NULL};
+
+static PyObject *py_lv_layout_callbacks_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_layout_callbacks_t_field_names, py_lv_layout_callbacks_t_methods);
+}
+
+static PyMethodDef py_lv_layout_callbacks_t_type_methods[] = {
+    {"__dir__", py_lv_layout_callbacks_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_layout_callbacks_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -54006,6 +55218,7 @@ PyTypeObject py_lv_layout_callbacks_t_type = {
     .tp_getattro = (getter)py_lv_layout_callbacks_t_getattro,
     .tp_setattro = (setter)py_lv_layout_callbacks_t_setattro,
     .tp_new = py_lv_layout_callbacks_t_new,
+    .tp_methods = py_lv_layout_callbacks_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -54077,6 +55290,19 @@ static PyObject *py_lv_fs_path_ex_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_fs_path_ex_t_field_names[] = {"path", NULL};
+
+static PyObject *py_lv_fs_path_ex_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_fs_path_ex_t_field_names, py_lv_fs_path_ex_t_methods);
+}
+
+static PyMethodDef py_lv_fs_path_ex_t_type_methods[] = {
+    {"__dir__", py_lv_fs_path_ex_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_fs_path_ex_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -54123,6 +55349,7 @@ PyTypeObject py_lv_fs_path_ex_t_type = {
     .tp_getattro = (getter)py_lv_fs_path_ex_t_getattro,
     .tp_setattro = (setter)py_lv_fs_path_ex_t_setattro,
     .tp_new = py_lv_fs_path_ex_t_new,
+    .tp_methods = py_lv_fs_path_ex_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -54195,6 +55422,19 @@ static PyObject *py_lv_fs_dir_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_fs_dir_t_field_names[] = {"dir_d", "drv", NULL};
+
+static PyObject *py_lv_fs_dir_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_fs_dir_t_field_names, py_lv_fs_dir_t_methods);
+}
+
+static PyMethodDef py_lv_fs_dir_t_type_methods[] = {
+    {"__dir__", py_lv_fs_dir_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_fs_dir_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -54242,6 +55482,7 @@ PyTypeObject py_lv_fs_dir_t_type = {
     .tp_getattro = (getter)py_lv_fs_dir_t_getattro,
     .tp_setattro = (setter)py_lv_fs_dir_t_setattro,
     .tp_new = py_lv_fs_dir_t_new,
+    .tp_methods = py_lv_fs_dir_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -54317,6 +55558,19 @@ static PyObject *py_lv_draw_fill_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_fill_dsc_t_field_names[] = {"base", "radius", "opa", "color", "grad", NULL};
+
+static PyObject *py_lv_draw_fill_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_fill_dsc_t_field_names, py_lv_draw_fill_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_fill_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_fill_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_fill_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -54367,6 +55621,7 @@ PyTypeObject py_lv_draw_fill_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_fill_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_fill_dsc_t_setattro,
     .tp_new = py_lv_draw_fill_dsc_t_new,
+    .tp_methods = py_lv_draw_fill_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -54443,6 +55698,19 @@ static PyObject *py_lv_draw_border_dsc_t_getattro(PyObject *self, PyObject *name
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_border_dsc_t_field_names[] = {"base", "radius", "color", "width", "opa", "side", NULL};
+
+static PyObject *py_lv_draw_border_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_border_dsc_t_field_names, py_lv_draw_border_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_border_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_border_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_border_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -54494,6 +55762,7 @@ PyTypeObject py_lv_draw_border_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_border_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_border_dsc_t_setattro,
     .tp_new = py_lv_draw_border_dsc_t_new,
+    .tp_methods = py_lv_draw_border_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -54573,6 +55842,19 @@ static PyObject *py_lv_draw_box_shadow_dsc_t_getattro(PyObject *self, PyObject *
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_box_shadow_dsc_t_field_names[] = {"base", "radius", "color", "width", "spread", "ofs_x", "ofs_y", "opa", "bg_cover", NULL};
+
+static PyObject *py_lv_draw_box_shadow_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_box_shadow_dsc_t_field_names, py_lv_draw_box_shadow_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_box_shadow_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_box_shadow_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_box_shadow_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -54627,6 +55909,7 @@ PyTypeObject py_lv_draw_box_shadow_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_box_shadow_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_box_shadow_dsc_t_setattro,
     .tp_new = py_lv_draw_box_shadow_dsc_t_new,
+    .tp_methods = py_lv_draw_box_shadow_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -54713,6 +55996,19 @@ static PyObject *py_lv_draw_letter_dsc_t_getattro(PyObject *self, PyObject *name
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_letter_dsc_t_field_names[] = {"base", "unicode", "font", "color", "rotation", "scale_x", "scale_y", "skew_x", "skew_y", "pivot", "opa", "decor", "blend_mode", "outline_stroke_opa", "outline_stroke_width", "outline_stroke_color", NULL};
+
+static PyObject *py_lv_draw_letter_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_letter_dsc_t_field_names, py_lv_draw_letter_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_letter_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_letter_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_letter_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -54774,6 +56070,7 @@ PyTypeObject py_lv_draw_letter_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_letter_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_letter_dsc_t_setattro,
     .tp_new = py_lv_draw_letter_dsc_t_new,
+    .tp_methods = py_lv_draw_letter_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -54857,6 +56154,19 @@ static PyObject *py_lv_draw_glyph_dsc_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_glyph_dsc_t_field_names[] = {"glyph_data", "format", "letter_coords", "bg_coords", "g", "color", "opa", "outline_stroke_color", "outline_stroke_opa", "outline_stroke_width", "rotation", "pivot", "_draw_buf", NULL};
+
+static PyObject *py_lv_draw_glyph_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_glyph_dsc_t_field_names, py_lv_draw_glyph_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_glyph_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_glyph_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_glyph_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -54915,6 +56225,7 @@ PyTypeObject py_lv_draw_glyph_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_glyph_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_glyph_dsc_t_setattro,
     .tp_new = py_lv_draw_glyph_dsc_t_new,
+    .tp_methods = py_lv_draw_glyph_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -54990,6 +56301,19 @@ static PyObject *py_lv_draw_triangle_dsc_t_getattro(PyObject *self, PyObject *na
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_triangle_dsc_t_field_names[] = {"base", "p", "color", "opa", "grad", NULL};
+
+static PyObject *py_lv_draw_triangle_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_triangle_dsc_t_field_names, py_lv_draw_triangle_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_triangle_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_triangle_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_triangle_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -55040,6 +56364,7 @@ PyTypeObject py_lv_draw_triangle_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_triangle_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_triangle_dsc_t_setattro,
     .tp_new = py_lv_draw_triangle_dsc_t_new,
+    .tp_methods = py_lv_draw_triangle_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -55141,6 +56466,19 @@ static PyObject *py_lv_indev_pointer_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_indev_pointer_t_field_names[] = {"act_point", "last_point", "last_raw_point", "vect", "vect_hist", "vect_hist_timestamp", "vect_hist_index", "scroll_sum", "scroll_throw_vect", "scroll_throw_vect_ori", "act_obj", "scroll_obj", "last_pressed", "last_hovered", "scroll_area", "gesture_sum", "diff", "short_click_streak", "last_short_click_point", "last_short_click_timestamp", "scroll_dir", "gesture_dir", "gesture_sent", "press_moved", "pressed", NULL};
+
+static PyObject *py_lv_indev_pointer_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_indev_pointer_t_field_names, py_lv_indev_pointer_t_methods);
+}
+
+static PyMethodDef py_lv_indev_pointer_t_type_methods[] = {
+    {"__dir__", py_lv_indev_pointer_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_indev_pointer_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -55211,6 +56549,7 @@ PyTypeObject py_lv_indev_pointer_t_type = {
     .tp_getattro = (getter)py_lv_indev_pointer_t_getattro,
     .tp_setattro = (setter)py_lv_indev_pointer_t_setattro,
     .tp_new = py_lv_indev_pointer_t_new,
+    .tp_methods = py_lv_indev_pointer_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -55284,6 +56623,19 @@ static PyObject *py_lv_indev_keypad_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_indev_keypad_t_field_names[] = {"last_state", "last_key", NULL};
+
+static PyObject *py_lv_indev_keypad_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_indev_keypad_t_field_names, py_lv_indev_keypad_t_methods);
+}
+
+static PyMethodDef py_lv_indev_keypad_t_type_methods[] = {
+    {"__dir__", py_lv_indev_keypad_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_indev_keypad_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -55331,6 +56683,7 @@ PyTypeObject py_lv_indev_keypad_t_type = {
     .tp_getattro = (getter)py_lv_indev_keypad_t_getattro,
     .tp_setattro = (setter)py_lv_indev_keypad_t_setattro,
     .tp_new = py_lv_indev_keypad_t_new,
+    .tp_methods = py_lv_indev_keypad_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -55407,6 +56760,19 @@ static PyObject *py_lv_indev_gesture_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_indev_gesture_t_field_names[] = {NULL};
+
+static PyObject *py_lv_indev_gesture_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_indev_gesture_t_field_names, py_lv_indev_gesture_t_methods);
+}
+
+static PyMethodDef py_lv_indev_gesture_t_type_methods[] = {
+    {"__dir__", py_lv_indev_gesture_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_indev_gesture_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -55452,6 +56818,7 @@ PyTypeObject py_lv_indev_gesture_t_type = {
     .tp_getattro = (getter)py_lv_indev_gesture_t_getattro,
     .tp_setattro = (setter)py_lv_indev_gesture_t_setattro,
     .tp_new = py_lv_indev_gesture_t_new,
+    .tp_methods = py_lv_indev_gesture_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -55502,6 +56869,19 @@ static PyObject *py_lv_indev_gesture_configuration_t_getattro(PyObject *self, Py
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_indev_gesture_configuration_t_field_names[] = {NULL};
+
+static PyObject *py_lv_indev_gesture_configuration_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_indev_gesture_configuration_t_field_names, py_lv_indev_gesture_configuration_t_methods);
+}
+
+static PyMethodDef py_lv_indev_gesture_configuration_t_type_methods[] = {
+    {"__dir__", py_lv_indev_gesture_configuration_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_indev_gesture_configuration_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -55547,6 +56927,7 @@ PyTypeObject py_lv_indev_gesture_configuration_t_type = {
     .tp_getattro = (getter)py_lv_indev_gesture_configuration_t_getattro,
     .tp_setattro = (setter)py_lv_indev_gesture_configuration_t_setattro,
     .tp_new = py_lv_indev_gesture_configuration_t_new,
+    .tp_methods = py_lv_indev_gesture_configuration_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -55617,6 +56998,19 @@ static PyObject *py_lv_indev_gesture_recognizer_t_getattro(PyObject *self, PyObj
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_indev_gesture_recognizer_t_field_names[] = {"type", "state", "info", "scale", "rotation", "distance", "speed", "two_fingers_swipe_dir", "config", "recog_fn", NULL};
+
+static PyObject *py_lv_indev_gesture_recognizer_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_indev_gesture_recognizer_t_field_names, py_lv_indev_gesture_recognizer_t_methods);
+}
+
+static PyMethodDef py_lv_indev_gesture_recognizer_t_type_methods[] = {
+    {"__dir__", py_lv_indev_gesture_recognizer_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_indev_gesture_recognizer_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -55672,6 +57066,7 @@ PyTypeObject py_lv_indev_gesture_recognizer_t_type = {
     .tp_getattro = (getter)py_lv_indev_gesture_recognizer_t_getattro,
     .tp_setattro = (setter)py_lv_indev_gesture_recognizer_t_setattro,
     .tp_new = py_lv_indev_gesture_recognizer_t_new,
+    .tp_methods = py_lv_indev_gesture_recognizer_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -55778,6 +57173,19 @@ static PyObject *py_lv_indev_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_indev_t_field_names[] = {"type", "read_cb", "state", "prev_state", "mode", "long_pr_sent", "reset_query", "enabled", "wait_until_release", "stop_processing_query", "timestamp", "pr_timestamp", "longpr_rep_timestamp", "driver_data", "user_data", "disp", "read_timer", "scroll_limit", "scroll_throw", "gesture_min_velocity", "gesture_min_distance", "long_press_time", "long_press_repeat_time", "rotary_sensitivity", "pointer", "keypad", "cursor", "group", "btn_points", "event_list", "scroll_throw_anim", "key_remap_cb", "recognizers", "cur_gesture", "gesture_data", "gesture_type", NULL};
+
+static PyObject *py_lv_indev_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_indev_t_field_names, py_lv_indev_t_methods);
+}
+
+static PyMethodDef py_lv_indev_t_type_methods[] = {
+    {"__dir__", py_lv_indev_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_indev_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -55859,6 +57267,7 @@ PyTypeObject py_lv_indev_t_type = {
     .tp_getattro = (getter)py_lv_indev_t_getattro,
     .tp_setattro = (setter)py_lv_indev_t_setattro,
     .tp_new = py_lv_indev_t_new,
+    .tp_methods = py_lv_indev_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -55938,6 +57347,19 @@ static PyObject *py_lv_indev_data_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_indev_data_t_field_names[] = {"gesture_type", "gesture_data", "state", "point", "key", "btn_id", "enc_diff", "timestamp", "continue_reading", NULL};
+
+static PyObject *py_lv_indev_data_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_indev_data_t_field_names, py_lv_indev_data_t_methods);
+}
+
+static PyMethodDef py_lv_indev_data_t_type_methods[] = {
+    {"__dir__", py_lv_indev_data_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_indev_data_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -55992,6 +57414,7 @@ PyTypeObject py_lv_indev_data_t_type = {
     .tp_getattro = (getter)py_lv_indev_data_t_getattro,
     .tp_setattro = (setter)py_lv_indev_data_t_setattro,
     .tp_new = py_lv_indev_data_t_new,
+    .tp_methods = py_lv_indev_data_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -56066,6 +57489,19 @@ static PyObject *py_lv_draw_mask_rect_dsc_t_getattro(PyObject *self, PyObject *n
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_mask_rect_dsc_t_field_names[] = {"base", "area", "radius", "keep_outside", NULL};
+
+static PyObject *py_lv_draw_mask_rect_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_mask_rect_dsc_t_field_names, py_lv_draw_mask_rect_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_mask_rect_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_mask_rect_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_mask_rect_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -56115,6 +57551,7 @@ PyTypeObject py_lv_draw_mask_rect_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_mask_rect_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_mask_rect_dsc_t_setattro,
     .tp_new = py_lv_draw_mask_rect_dsc_t_new,
+    .tp_methods = py_lv_draw_mask_rect_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -56198,6 +57635,19 @@ static PyObject *py_lv_draw_sw_mask_common_dsc_t_getattro(PyObject *self, PyObje
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_common_dsc_t_field_names[] = {"cb", "type", NULL};
+
+static PyObject *py_lv_draw_sw_mask_common_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_common_dsc_t_field_names, py_lv_draw_sw_mask_common_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_common_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_common_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_common_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -56245,6 +57695,7 @@ PyTypeObject py_lv_draw_sw_mask_common_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_common_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_common_dsc_t_setattro,
     .tp_new = py_lv_draw_sw_mask_common_dsc_t_new,
+    .tp_methods = py_lv_draw_sw_mask_common_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -56319,6 +57770,19 @@ static PyObject *py_lv_draw_sw_mask_line_param_cfg_t_getattro(PyObject *self, Py
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_line_param_cfg_t_field_names[] = {"p1", "p2", "side", NULL};
+
+static PyObject *py_lv_draw_sw_mask_line_param_cfg_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_line_param_cfg_t_field_names, py_lv_draw_sw_mask_line_param_cfg_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_line_param_cfg_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_line_param_cfg_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_line_param_cfg_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -56367,6 +57831,7 @@ PyTypeObject py_lv_draw_sw_mask_line_param_cfg_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_line_param_cfg_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_line_param_cfg_t_setattro,
     .tp_new = py_lv_draw_sw_mask_line_param_cfg_t_new,
+    .tp_methods = py_lv_draw_sw_mask_line_param_cfg_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -56446,6 +57911,19 @@ static PyObject *py_lv_draw_sw_mask_line_param_t_getattro(PyObject *self, PyObje
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_line_param_t_field_names[] = {"dsc", "cfg", "origo", "xy_steep", "yx_steep", "steep", "spx", "flat", "inv", NULL};
+
+static PyObject *py_lv_draw_sw_mask_line_param_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_line_param_t_field_names, py_lv_draw_sw_mask_line_param_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_line_param_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_line_param_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_line_param_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -56500,6 +57978,7 @@ PyTypeObject py_lv_draw_sw_mask_line_param_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_line_param_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_line_param_t_setattro,
     .tp_new = py_lv_draw_sw_mask_line_param_t_new,
+    .tp_methods = py_lv_draw_sw_mask_line_param_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -56574,6 +58053,19 @@ static PyObject *py_lv_draw_sw_mask_angle_param_cfg_t_getattro(PyObject *self, P
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_angle_param_cfg_t_field_names[] = {"vertex_p", "start_angle", "end_angle", NULL};
+
+static PyObject *py_lv_draw_sw_mask_angle_param_cfg_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_angle_param_cfg_t_field_names, py_lv_draw_sw_mask_angle_param_cfg_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_angle_param_cfg_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_angle_param_cfg_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_angle_param_cfg_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -56622,6 +58114,7 @@ PyTypeObject py_lv_draw_sw_mask_angle_param_cfg_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_angle_param_cfg_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_angle_param_cfg_t_setattro,
     .tp_new = py_lv_draw_sw_mask_angle_param_cfg_t_new,
+    .tp_methods = py_lv_draw_sw_mask_angle_param_cfg_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -56697,6 +58190,19 @@ static PyObject *py_lv_draw_sw_mask_angle_param_t_getattro(PyObject *self, PyObj
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_angle_param_t_field_names[] = {"dsc", "cfg", "start_line", "end_line", "delta_deg", NULL};
+
+static PyObject *py_lv_draw_sw_mask_angle_param_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_angle_param_t_field_names, py_lv_draw_sw_mask_angle_param_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_angle_param_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_angle_param_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_angle_param_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -56747,6 +58253,7 @@ PyTypeObject py_lv_draw_sw_mask_angle_param_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_angle_param_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_angle_param_t_setattro,
     .tp_new = py_lv_draw_sw_mask_angle_param_t_new,
+    .tp_methods = py_lv_draw_sw_mask_angle_param_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -56821,6 +58328,19 @@ static PyObject *py_lv_draw_sw_mask_radius_param_cfg_t_getattro(PyObject *self, 
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_radius_param_cfg_t_field_names[] = {"rect", "radius", "outer", NULL};
+
+static PyObject *py_lv_draw_sw_mask_radius_param_cfg_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_radius_param_cfg_t_field_names, py_lv_draw_sw_mask_radius_param_cfg_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_radius_param_cfg_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_radius_param_cfg_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_radius_param_cfg_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -56869,6 +58389,7 @@ PyTypeObject py_lv_draw_sw_mask_radius_param_cfg_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_radius_param_cfg_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_radius_param_cfg_t_setattro,
     .tp_new = py_lv_draw_sw_mask_radius_param_cfg_t_new,
+    .tp_methods = py_lv_draw_sw_mask_radius_param_cfg_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -56946,6 +58467,19 @@ static PyObject *py_lv_draw_sw_mask_radius_circle_dsc_t_getattro(PyObject *self,
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_radius_circle_dsc_t_field_names[] = {"buf", "cir_opa", "x_start_on_y", "opa_start_on_y", "life", "used_cnt", "radius", NULL};
+
+static PyObject *py_lv_draw_sw_mask_radius_circle_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_radius_circle_dsc_t_field_names, py_lv_draw_sw_mask_radius_circle_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_radius_circle_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_radius_circle_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_radius_circle_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -56998,6 +58532,7 @@ PyTypeObject py_lv_draw_sw_mask_radius_circle_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_radius_circle_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_radius_circle_dsc_t_setattro,
     .tp_new = py_lv_draw_sw_mask_radius_circle_dsc_t_new,
+    .tp_methods = py_lv_draw_sw_mask_radius_circle_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -57071,6 +58606,19 @@ static PyObject *py_lv_draw_sw_mask_radius_param_t_getattro(PyObject *self, PyOb
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_radius_param_t_field_names[] = {"dsc", "cfg", "circle", NULL};
+
+static PyObject *py_lv_draw_sw_mask_radius_param_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_radius_param_t_field_names, py_lv_draw_sw_mask_radius_param_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_radius_param_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_radius_param_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_radius_param_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -57119,6 +58667,7 @@ PyTypeObject py_lv_draw_sw_mask_radius_param_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_radius_param_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_radius_param_t_setattro,
     .tp_new = py_lv_draw_sw_mask_radius_param_t_new,
+    .tp_methods = py_lv_draw_sw_mask_radius_param_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -57195,6 +58744,19 @@ static PyObject *py_lv_draw_sw_mask_fade_param_cfg_t_getattro(PyObject *self, Py
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_fade_param_cfg_t_field_names[] = {"coords", "y_top", "y_bottom", "opa_top", "opa_bottom", NULL};
+
+static PyObject *py_lv_draw_sw_mask_fade_param_cfg_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_fade_param_cfg_t_field_names, py_lv_draw_sw_mask_fade_param_cfg_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_fade_param_cfg_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_fade_param_cfg_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_fade_param_cfg_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -57245,6 +58807,7 @@ PyTypeObject py_lv_draw_sw_mask_fade_param_cfg_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_fade_param_cfg_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_fade_param_cfg_t_setattro,
     .tp_new = py_lv_draw_sw_mask_fade_param_cfg_t_new,
+    .tp_methods = py_lv_draw_sw_mask_fade_param_cfg_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -57317,6 +58880,19 @@ static PyObject *py_lv_draw_sw_mask_fade_param_t_getattro(PyObject *self, PyObje
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_fade_param_t_field_names[] = {"dsc", "cfg", NULL};
+
+static PyObject *py_lv_draw_sw_mask_fade_param_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_fade_param_t_field_names, py_lv_draw_sw_mask_fade_param_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_fade_param_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_fade_param_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_fade_param_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -57364,6 +58940,7 @@ PyTypeObject py_lv_draw_sw_mask_fade_param_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_fade_param_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_fade_param_t_setattro,
     .tp_new = py_lv_draw_sw_mask_fade_param_t_new,
+    .tp_methods = py_lv_draw_sw_mask_fade_param_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -57437,6 +59014,19 @@ static PyObject *py_lv_draw_sw_mask_map_param_cfg_t_getattro(PyObject *self, PyO
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_map_param_cfg_t_field_names[] = {"coords", "map", NULL};
+
+static PyObject *py_lv_draw_sw_mask_map_param_cfg_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_map_param_cfg_t_field_names, py_lv_draw_sw_mask_map_param_cfg_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_map_param_cfg_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_map_param_cfg_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_map_param_cfg_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -57484,6 +59074,7 @@ PyTypeObject py_lv_draw_sw_mask_map_param_cfg_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_map_param_cfg_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_map_param_cfg_t_setattro,
     .tp_new = py_lv_draw_sw_mask_map_param_cfg_t_new,
+    .tp_methods = py_lv_draw_sw_mask_map_param_cfg_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -57556,6 +59147,19 @@ static PyObject *py_lv_draw_sw_mask_map_param_t_getattro(PyObject *self, PyObjec
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_mask_map_param_t_field_names[] = {"dsc", "cfg", NULL};
+
+static PyObject *py_lv_draw_sw_mask_map_param_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_mask_map_param_t_field_names, py_lv_draw_sw_mask_map_param_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_mask_map_param_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_mask_map_param_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_mask_map_param_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -57603,6 +59207,7 @@ PyTypeObject py_lv_draw_sw_mask_map_param_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_mask_map_param_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_mask_map_param_t_setattro,
     .tp_new = py_lv_draw_sw_mask_map_param_t_new,
+    .tp_methods = py_lv_draw_sw_mask_map_param_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -57686,6 +59291,19 @@ static PyObject *py_lv_draw_sw_custom_blend_handler_t_getattro(PyObject *self, P
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_custom_blend_handler_t_field_names[] = {"dest_cf", "handler", NULL};
+
+static PyObject *py_lv_draw_sw_custom_blend_handler_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_custom_blend_handler_t_field_names, py_lv_draw_sw_custom_blend_handler_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_custom_blend_handler_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_custom_blend_handler_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_custom_blend_handler_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -57733,6 +59351,7 @@ PyTypeObject py_lv_draw_sw_custom_blend_handler_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_custom_blend_handler_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_custom_blend_handler_t_setattro,
     .tp_new = py_lv_draw_sw_custom_blend_handler_t_new,
+    .tp_methods = py_lv_draw_sw_custom_blend_handler_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -57807,6 +59426,19 @@ static PyObject *py_lv_text_attributes_t_getattro(PyObject *self, PyObject *name
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_text_attributes_t_field_names[] = {"letter_space", "line_space", "max_width", "text_flags", NULL};
+
+static PyObject *py_lv_text_attributes_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_text_attributes_t_field_names, py_lv_text_attributes_t_methods);
+}
+
+static PyMethodDef py_lv_text_attributes_t_type_methods[] = {
+    {"__dir__", py_lv_text_attributes_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_text_attributes_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -57856,6 +59488,7 @@ PyTypeObject py_lv_text_attributes_t_type = {
     .tp_getattro = (getter)py_lv_text_attributes_t_getattro,
     .tp_setattro = (setter)py_lv_text_attributes_t_setattro,
     .tp_new = py_lv_text_attributes_t_new,
+    .tp_methods = py_lv_text_attributes_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -60702,6 +62335,19 @@ static PyObject *py_lv_sqrt_res_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_sqrt_res_t_field_names[] = {"i", "f", NULL};
+
+static PyObject *py_lv_sqrt_res_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_sqrt_res_t_field_names, py_lv_sqrt_res_t_methods);
+}
+
+static PyMethodDef py_lv_sqrt_res_t_type_methods[] = {
+    {"__dir__", py_lv_sqrt_res_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_sqrt_res_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -60749,6 +62395,7 @@ PyTypeObject py_lv_sqrt_res_t_type = {
     .tp_getattro = (getter)py_lv_sqrt_res_t_getattro,
     .tp_setattro = (setter)py_lv_sqrt_res_t_setattro,
     .tp_new = py_lv_sqrt_res_t_new,
+    .tp_methods = py_lv_sqrt_res_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -61847,6 +63494,19 @@ static PyObject *py_lv_color_hsv_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_color_hsv_t_field_names[] = {"h", "s", "v", NULL};
+
+static PyObject *py_lv_color_hsv_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_color_hsv_t_field_names, py_lv_color_hsv_t_methods);
+}
+
+static PyMethodDef py_lv_color_hsv_t_type_methods[] = {
+    {"__dir__", py_lv_color_hsv_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_color_hsv_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -61895,6 +63555,7 @@ PyTypeObject py_lv_color_hsv_t_type = {
     .tp_getattro = (getter)py_lv_color_hsv_t_getattro,
     .tp_setattro = (setter)py_lv_color_hsv_t_setattro,
     .tp_new = py_lv_color_hsv_t_new,
+    .tp_methods = py_lv_color_hsv_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -75315,6 +76976,19 @@ static PyObject *py_lv_draw_sw_blend_dsc_t_getattro(PyObject *self, PyObject *na
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_draw_sw_blend_dsc_t_field_names[] = {"blend_area", "src_buf", "src_stride", "src_color_format", "src_area", "opa", "color", "mask_buf", "mask_res", "mask_area", "mask_stride", "blend_mode", NULL};
+
+static PyObject *py_lv_draw_sw_blend_dsc_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_draw_sw_blend_dsc_t_field_names, py_lv_draw_sw_blend_dsc_t_methods);
+}
+
+static PyMethodDef py_lv_draw_sw_blend_dsc_t_type_methods[] = {
+    {"__dir__", py_lv_draw_sw_blend_dsc_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_draw_sw_blend_dsc_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -75372,6 +77046,7 @@ PyTypeObject py_lv_draw_sw_blend_dsc_t_type = {
     .tp_getattro = (getter)py_lv_draw_sw_blend_dsc_t_getattro,
     .tp_setattro = (setter)py_lv_draw_sw_blend_dsc_t_setattro,
     .tp_new = py_lv_draw_sw_blend_dsc_t_new,
+    .tp_methods = py_lv_draw_sw_blend_dsc_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -84460,6 +86135,19 @@ static PyObject *py_lv_hit_test_info_t_getattro(PyObject *self, PyObject *name)
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_hit_test_info_t_field_names[] = {"point", "res", NULL};
+
+static PyObject *py_lv_hit_test_info_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_hit_test_info_t_field_names, py_lv_hit_test_info_t_methods);
+}
+
+static PyMethodDef py_lv_hit_test_info_t_type_methods[] = {
+    {"__dir__", py_lv_hit_test_info_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_hit_test_info_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -84507,6 +86195,7 @@ PyTypeObject py_lv_hit_test_info_t_type = {
     .tp_getattro = (getter)py_lv_hit_test_info_t_getattro,
     .tp_setattro = (setter)py_lv_hit_test_info_t_setattro,
     .tp_new = py_lv_hit_test_info_t_new,
+    .tp_methods = py_lv_hit_test_info_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
@@ -92314,6 +94003,19 @@ static PyObject *py_lv_indev_touch_data_t_getattro(PyObject *self, PyObject *nam
     return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
+static const char *const py_lv_indev_touch_data_t_field_names[] = {"point", "state", "id", "timestamp", NULL};
+
+static PyObject *py_lv_indev_touch_data_t_dir(PyObject *self, PyObject *unused)
+{
+    (void)unused;
+    return lvpy_struct_dir(self, py_lv_indev_touch_data_t_field_names, py_lv_indev_touch_data_t_methods);
+}
+
+static PyMethodDef py_lv_indev_touch_data_t_type_methods[] = {
+    {"__dir__", py_lv_indev_touch_data_t_dir, METH_NOARGS, NULL},
+    {NULL}
+};
+
 static int py_lv_indev_touch_data_t_setattro(PyObject *self, PyObject *name, PyObject *value)
 {
     if (value == NULL) {
@@ -92363,6 +94065,7 @@ PyTypeObject py_lv_indev_touch_data_t_type = {
     .tp_getattro = (getter)py_lv_indev_touch_data_t_getattro,
     .tp_setattro = (setter)py_lv_indev_touch_data_t_setattro,
     .tp_new = py_lv_indev_touch_data_t_new,
+    .tp_methods = py_lv_indev_touch_data_t_type_methods,
     .tp_base = &py_lv_base_struct_type,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
