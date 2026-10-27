@@ -41,8 +41,8 @@ include("/path/to/lvgl-micropython/manifest.py")
 On unix that manifest is `ports/unix/variants/standard/manifest.py`. On esp32
 and rp2 it is usually `ports/<port>/boards/manifest.py`, unless your board
 brings its own. Then build as usual. The include brings in the `lvgl` C module
-and freezes `fs_driver`. On the unix port against MicroPython 1.29.0,
-`import lvgl` reports LVGL 9.5.
+and freezes `fs_driver`. On the unix port against MicroPython 1.30
+preview, `lvgl.version_major()` and `lvgl.version_minor()` report 9 and 5.
 
 To leave the MicroPython tree alone, write a manifest of your own and pass it
 as `FROZEN_MANIFEST=`. That replaces the port's default, so include the default
