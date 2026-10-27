@@ -30,10 +30,8 @@ lvgl-bindings/
   scripts/              Verification and release utilities
 ```
 
-`docs/` also holds three pages that stay off the site: the rebuild's working
-checklist (`lvgl-bindings-rebuild-plan.md`), the clean-break migration notes
-(`generator-migration.md`), and `baseline/`, the compact historical API record
-that `binding.api_report` and the tests read.
+`docs/` also holds `baseline/`, the compact historical API record that
+`binding.api_report` and the tests read. It stays off the site.
 
 ## Set up
 

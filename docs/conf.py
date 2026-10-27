@@ -14,11 +14,8 @@ globals().update(configure(
     version_file=None,
 ))
 
-# Pages that describe how the generator was rebuilt, not how to use LVGL, and
-# the data the API report reads. They stay in the repository, off the site.
+# The data the API report reads stays in the repository, off the site.
 exclude_patterns += [
     "README.md",
-    "lvgl-bindings-rebuild-plan.md",
-    "generator-migration.md",
     "baseline",
 ]
