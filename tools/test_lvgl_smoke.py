@@ -596,6 +596,35 @@ def test_struct_array_fields(lv):
     print("OK: struct array fields index, assign and check their length")
 
 
+def test_grad_helpers(lv):
+    # The gradient helpers are methods named as the stub names them, and the
+    # params union they fill in is readable and writable (lvgl-bindings#39).
+    g = _lv_export(lv, "grad_dsc_t")()
+    for name in ("linear_init", "radial_init", "radial_set_focal", "conical_init",
+                 "horizontal_init", "vertical_init", "init_stops"):
+        if not hasattr(g, name):
+            _fail("grad_dsc_t has no %s" % name)
+    pad = lv.GRAD_EXTEND.PAD
+    g.linear_init(1, 2, 3, 4, pad)
+    lin = g.params.linear
+    if (lin.start.x, lin.start.y, lin.end.x, lin.end.y) != (1, 2, 3, 4):
+        _fail("linear_init did not fill params.linear")
+    if g.dir != lv.GRAD_DIR.LINEAR:
+        _fail("linear_init did not set dir")
+    g.radial_init(80, 80, 160, 80, pad)
+    rad = g.params.radial
+    if (rad.end.x, rad.end.y, rad.end_extent.x, rad.end_extent.y) != (80, 80, 160, 80):
+        _fail("radial_init did not fill params.radial")
+    g.conical_init(50, 60, 0, 1800, pad)
+    con = g.params.conical
+    if (con.center.x, con.start_angle, con.end_angle) != (50, 0, 1800):
+        _fail("conical_init did not fill params.conical")
+    con.end_angle = 900
+    if g.params.conical.end_angle != 900:
+        _fail("a write through params.conical was lost")
+    print("OK: gradient helpers by stub name; params reads and writes")
+
+
 def test_struct_value_from_dict(lv):
     # A struct-by-value field takes a dict, as its type's constructor does, and
     # a wrong type raises instead of crashing CPython (lvgl-bindings#21).
@@ -693,6 +722,7 @@ def main():
         test_struct_fields_and_arrays(lv)
         test_line_points_list_and_buffer(lv)
         test_struct_array_fields(lv)
+        test_grad_helpers(lv)
         test_struct_value_from_dict(lv)
         test_event_callback(lv)
         test_callback_gc_with_widget_ref(lv)

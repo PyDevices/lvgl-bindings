@@ -585,6 +585,17 @@ def _public_struct_name(struct: CStruct) -> str:
     return "<anonymous>"
 
 
+def _struct_method_name(function_name: str, struct_c_name: str) -> str:
+    """The name the runtimes give a struct method: the part of the function
+    name after the last ``_`` it shares with the struct's C name, so
+    lv_grad_linear_init on lv_grad_dsc_t is ``linear_init``
+    (analyze.noncommon_part; lvgl-bindings#39)."""
+    n = len(commonprefix([function_name, struct_c_name])) - 1
+    while n > 0 and function_name[n] != "_":
+        n -= 1
+    return function_name[n + 1 :]
+
+
 def _method_name(function_name: str, receiver: str, module_prefix: str) -> str:
     plain = _strip_prefix(function_name, module_prefix)
     stems = [receiver]
@@ -902,12 +913,14 @@ def build_api_model(
         for struct in declarations.structs
     }
     struct_receivers = {}
+    struct_c_receivers = {}
     for struct in declarations.structs:
         receiver = struct_names[id(struct)]
         for function in index.struct_functions(receiver):
             struct_receivers.setdefault(
                 function.name, struct_python_names[id(struct)]
             )
+            struct_c_receivers.setdefault(function.name, receiver)
 
     constructors = {}
     for function in declarations.functions:
@@ -963,6 +976,10 @@ def build_api_model(
                 python_name=(
                     "create"
                     if role == "constructor"
+                    else _struct_method_name(
+                        function.name, struct_c_receivers[function.name]
+                    )
+                    if role == "struct_method"
                     else _method_name(function.name, receiver, module_prefix)
                     if receiver is not None
                     else plain

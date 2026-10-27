@@ -276,8 +276,27 @@ def try_generate_struct_cpython(struct_name, struct):
     )
 
     for decl in flatten_struct_decls:
-        try_generate_type(decl.type)
+        converted = try_generate_type(decl.type)
         type_name = get_type_fn(decl.type, remove_quals=True)
+        if (
+            not converted
+            and ("\n" in type_name or "{" in type_name)
+            and isinstance(decl.type, c_ast.TypeDecl)
+            and is_struct(decl.type.type)
+        ):
+            # An anonymous struct or union member (lv_grad_dsc_t.params):
+            # name its type and bind it as a struct, as MicroPython does
+            # (lvgl-bindings#39).
+            type_name = "%s_%s_t" % (struct_name[:-2], decl.type.declname)
+            print(
+                "typedef __typeof__( (({tag}{parent}*)(0))->{child} ) {new};".format(
+                    tag=struct_tag,
+                    parent=struct_name,
+                    child=decl.type.declname,
+                    new=type_name,
+                )
+            )
+            try_generate_struct_cpython(type_name, decl.type.type)
         if "\n" in type_name or "{" in type_name:
             continue
         if not is_struct(decl.type.type):
